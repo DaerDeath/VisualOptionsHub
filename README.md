@@ -57,12 +57,34 @@ uv run voptions earnings --spot 100 --avg-move 0.10
 # Cadena de opciones en vivo desde IBKR (TWS paper en 7497)
 uv run voptions chain AAPL --port 7497
 
-# Dashboard web de flujo de opciones (estilo streams 0DTE de QQQ)
+# Terminal web multi-vista (flujo de opciones, footprint…)
 uv run voptions stream                          # simulador en http://127.0.0.1:8000
-uv run voptions stream --mode ibkr --symbol QQQ # datos en vivo desde TWS/Gateway
+TRADIER_TOKEN=xxx uv run voptions stream --mode tradier   # API Tradier (gratis, ~15 min retraso)
+uv run voptions stream --mode ibkr              # datos en vivo desde TWS/Gateway
 ```
 
-## Dashboard de flujo (`voptions stream`)
+## Terminal web (`voptions stream`)
+
+Al abrir el navegador aparece un **selector**: eliges el subyacente (QQQ,
+SPY, SPX, NVDA… o el que escribas) y la visualización. Desde cualquier
+vista puedes cambiar de símbolo (input de la barra superior + Enter) o
+saltar entre vistas sin recargar. Cada símbolo mantiene su propia sesión
+de datos en el servidor.
+
+Vistas disponibles:
+
+1. **Flujo de opciones** — el dashboard estilo stream 0DTE (abajo).
+2. **Footprint** — velas con volumen comprador × vendedor por nivel de
+   precio, delta y volumen por barra, POC (ámbar) e imbalances diagonales
+   ≥3× (borde rojo/verde).
+3. Huecos para las siguientes (heatmap de OI, DOM, TPO…): pídelas.
+
+Fuentes de datos (`--mode`): `sim` (simulador, por defecto), `tradier`
+(token en `TRADIER_TOKEN` o `--tradier-token`; `--tradier-env sandbox`
+gratis con ~15 min de retraso, `prod` con cuenta de broker) e `ibkr`
+(TWS/IB Gateway en vivo).
+
+## Vista de flujo
 
 Replica el "Options Premium / Volume Profile" de los streams 0DTE, con la
 lectura que explica el vídeo *how to read the stream's data*:

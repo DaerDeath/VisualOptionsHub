@@ -3,59 +3,42 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>visual-options · stream</title>
+<title>visual-options</title>
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
 <header id="topbar">
-  <div class="brand">
+  <a class="brand" href="#/" title="inicio">
     <span class="brand-name">visual-options</span>
-    <span class="brand-sub">options premium / volume profile</span>
-  </div>
-  <div class="quote">
-    <span id="symbol" class="symbol">—</span>
+    <span id="viewTitle" class="brand-sub">terminal</span>
+  </a>
+  <div class="quote" id="quoteBox" hidden>
+    <input id="symbolInput" class="symbol-input" spellcheck="false" autocomplete="off"
+           title="cambiar símbolo (Enter)">
     <span id="price" class="price">—</span>
   </div>
-  <div class="aggregates">
+  <div class="aggregates" id="aggBox" hidden>
     <div class="chip chip-put"><span class="chip-label">Put Sell %</span><span id="putSell" class="chip-value">—</span></div>
     <div class="chip chip-call"><span class="chip-label">Call Sell %</span><span id="callSell" class="chip-value">—</span></div>
   </div>
+  <nav class="viewnav" id="viewNav" hidden>
+    <a data-view="flow" href="#">flujo</a>
+    <a data-view="footprint" href="#">footprint</a>
+  </nav>
   <div class="session">
-    <span id="clock" class="clock">--:--:--</span>
+    <span id="clock" class="clock"></span>
     <span id="status" class="status" title="estado de la conexión"></span>
-    <button id="pauseBtn" class="btn" title="pausar / reanudar (espacio)">⏸</button>
+    <button id="pauseBtn" class="btn" hidden title="pausar / reanudar (espacio)">⏸</button>
   </div>
 </header>
 
-<main id="grid">
-  <section class="panel panel-profile">
-    <div class="panel-head">
-      <h2>Cadena · volumen y % vendido por strike</h2>
-      <span class="hint">calls arriba · puts abajo · rojo = vendido, verde = comprado · histograma blanco = perfil de volumen</span>
-    </div>
-    <canvas id="profileCanvas"></canvas>
-  </section>
-
-  <section class="panel panel-series">
-    <div class="panel-head">
-      <h2>Flujo agregado vs precio</h2>
-      <span class="hint">azul baja → precio sube · roja baja → el precio la sigue</span>
-    </div>
-    <canvas id="seriesCanvas"></canvas>
-  </section>
-
-  <section class="panel panel-gamma">
-    <div class="panel-head"><h2>Gamma (GEX) por strike</h2></div>
-    <canvas id="gammaCanvas"></canvas>
-  </section>
-
-  <section class="panel panel-magnet">
-    <div class="panel-head"><h2>Magnet strikes <span class="hint">OI mariposas / volumen</span></h2></div>
-    <canvas id="magnetCanvas"></canvas>
-  </section>
-</main>
+<main id="view"></main>
 
 <div id="tooltip" class="tooltip" hidden></div>
+<script src="/static/shared.js"></script>
+<script src="/static/home.js"></script>
+<script src="/static/flow.js"></script>
+<script src="/static/footprint.js"></script>
 <script src="/static/app.js"></script>
 </body>
 </html>

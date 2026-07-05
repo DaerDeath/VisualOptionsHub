@@ -12,8 +12,10 @@ Requiere TWS/IB Gateway con la API activada y suscripción de datos OPRA.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 from datetime import datetime
 
+from visual_options.stream.footprint import FootprintBuilder
 from visual_options.stream.state import DashboardState, SeriesPoint, StrikeRow
 
 STRIKE_SPAN = 11
@@ -25,6 +27,8 @@ class IBKRFeed:
 
     def __init__(self, symbol: str = "QQQ", host: str = "127.0.0.1", port: int = 7497,
                  client_id: int = 21) -> None:
+        self.footprint = FootprintBuilder()
+        self._run_task: asyncio.Task | None = None
         try:
             from ib_async import IB
         except ImportError as exc:
@@ -37,6 +41,18 @@ class IBKRFeed:
         self.state = DashboardState(symbol=self.symbol, spot=0.0, source="ibkr", connected=False)
         self._classified: dict[tuple[float, str], dict[str, float]] = {}
         self._last_volume: dict[tuple[float, str], int] = {}
+
+    async def step(self) -> None:
+        """Interfaz Feed (manager.py): arranca run() en segundo plano."""
+        if self._run_task is None:
+            self._run_task = asyncio.create_task(self.run())
+        await asyncio.sleep(2.0)
+
+    async def close(self) -> None:
+        if self._run_task is not None:
+            self._run_task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await self._run_task
 
     async def run(self) -> None:
         from ib_async import Option, Stock

@@ -16,28 +16,57 @@ import math
 import random
 from datetime import datetime, timedelta
 
+from visual_options.stream.footprint import FootprintBuilder
 from visual_options.stream.state import DashboardState, SeriesPoint, StrikeRow
 
 STRIKE_SPAN = 11          # strikes a cada lado del spot
 SQUEEZE_PROBABILITY = 0.004
+FOOTPRINT_BAR_MINUTES = 5
+
+# Precios base plausibles para el simulador por símbolo (jul 2026 aprox.)
+BASE_PRICES: dict[str, float] = {
+    "QQQ": 719.9, "SPY": 634.0, "SPX": 6360.0, "IWM": 228.0, "DIA": 448.0,
+    "NVDA": 172.0, "TSLA": 318.0, "AAPL": 212.0, "MSFT": 498.0, "AMZN": 224.0,
+    "META": 725.0, "AMD": 138.0, "GOOGL": 180.0, "NFLX": 1290.0, "COIN": 355.0,
+}
+DEFAULT_BASE_PRICE = 100.0
+
+
+def base_price_for(symbol: str) -> float:
+    return BASE_PRICES.get(symbol.upper(), DEFAULT_BASE_PRICE)
+
+
+def strike_step_for(spot: float) -> float:
+    """Espaciado de strikes según el nivel del subyacente (SPX usa 10, QQQ 1…)."""
+    if spot >= 3000:
+        return 10.0
+    if spot >= 1000:
+        return 5.0
+    if spot >= 50:
+        return 1.0
+    return 0.5
 
 
 class SessionSimulator:
     """Evoluciona un DashboardState con ticks discretos."""
 
-    def __init__(self, symbol: str = "QQQ", spot: float = 719.9, seed: int | None = None) -> None:
+    def __init__(self, symbol: str = "QQQ", spot: float | None = None, seed: int | None = None) -> None:
         self.rng = random.Random(seed)
+        spot = spot if spot is not None else base_price_for(symbol)
         self.spot0 = spot
+        self.footprint = FootprintBuilder()
         self.put_sell = 12.0 + self.rng.uniform(-2, 2)
         self.call_sell = 16.0 + self.rng.uniform(-2, 2)
         self.squeeze_ticks = 0
         self.clock = datetime.now().replace(hour=6, minute=30, second=0, microsecond=0)
-        base = round(spot)
+        step = strike_step_for(spot)
+        base = round(spot / step) * step
         self.state = DashboardState(
-            symbol=symbol,
+            symbol=symbol.upper(),
             spot=spot,
             source="sim",
-            strikes=[StrikeRow(strike=float(k)) for k in range(base - STRIKE_SPAN, base + STRIKE_SPAN + 1)],
+            strikes=[StrikeRow(strike=float(base + i * step))
+                     for i in range(-STRIKE_SPAN, STRIKE_SPAN + 1)],
         )
         self._seed_magnet_profile()
         for _ in range(40):  # arranque con algo de historia
@@ -70,13 +99,16 @@ class SessionSimulator:
         self.put_sell = min(45.0, max(3.0, self.put_sell))
 
         # El precio sigue al flujo (regla del vídeo) más ruido
+        prev_spot = state.spot
+        point_scale = self.spot0 / 720.0  # el sim está calibrado sobre QQQ~720
         flow_signal = (self.put_sell - 12.0) * 0.010 - (self.call_sell - 15.5) * 0.014
-        state.spot += flow_signal * seconds / 60.0 + rng.gauss(0, 0.11) * scale
+        state.spot += (flow_signal * seconds / 60.0 + rng.gauss(0, 0.11) * scale) * point_scale
         state.spot = max(self.spot0 * 0.97, min(self.spot0 * 1.03, state.spot))
 
         self._update_strikes(seconds)
         self.clock += timedelta(seconds=seconds)
         state.timestamp = self.clock.strftime("%H:%M:%S")
+        self._emit_trades(prev_spot, seconds)
         state.append_point(SeriesPoint(
             t=state.timestamp,
             price=round(state.spot, 2),
@@ -84,11 +116,27 @@ class SessionSimulator:
             call_sell_pct=round(self.call_sell, 3),
         ))
 
+    def _emit_trades(self, prev_spot: float, seconds: float) -> None:
+        """Genera prints sintéticos entre prev_spot y el spot actual para el footprint."""
+        rng = self.rng
+        n_trades = max(3, int(seconds / 4))
+        direction_bias = 0.5 + _clamp((self.state.spot - prev_spot) / max(prev_spot * 4e-4, 1e-9), -0.35, 0.35)
+        trades: list[tuple[float, int, bool]] = []
+        for i in range(n_trades):
+            frac = (i + 1) / n_trades
+            price = prev_spot + (self.state.spot - prev_spot) * frac + rng.gauss(0, prev_spot * 6e-5)
+            size = max(1, int(rng.expovariate(1 / 40)))
+            trades.append((price, size, rng.random() < direction_bias))
+        bar_minute = (self.clock.minute // FOOTPRINT_BAR_MINUTES) * FOOTPRINT_BAR_MINUTES
+        bar_key = f"{self.clock.hour:02d}:{bar_minute:02d}"
+        self.footprint.add_trades(self.state.timestamp, trades, bar_key=bar_key)
+
     def _update_strikes(self, seconds: float) -> None:
         rng = self.rng
         state = self.state
+        step = strike_step_for(state.spot)
         for row in state.strikes:
-            distance = row.strike - state.spot
+            distance = (row.strike - state.spot) / step
             # volumen: campana alrededor del dinero, calls pesados arriba
             call_intensity = math.exp(-0.5 * ((distance - 3.5) / 5.0) ** 2)
             put_intensity = math.exp(-0.5 * ((distance + 2.5) / 5.0) ** 2)

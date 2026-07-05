@@ -146,8 +146,9 @@ def cmd_chain(args: argparse.Namespace) -> None:
 
 def cmd_stream(args: argparse.Namespace) -> None:
     from visual_options.stream.server import run_server
-    run_server(mode=args.mode, symbol=args.symbol, web_port=args.web_port,
-               ib_host=args.host, ib_port=args.port, seed=args.seed)
+    run_server(mode=args.mode, web_port=args.web_port,
+               ib_host=args.host, ib_port=args.port, seed=args.seed,
+               tradier_token=args.tradier_token, tradier_env=args.tradier_env)
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -206,14 +207,16 @@ def main(argv: list[str] | None = None) -> None:
     p_ch.add_argument("--expiries", type=int, default=2, help="número de vencimientos a mostrar")
     p_ch.set_defaults(func=cmd_chain)
 
-    p_st = sub.add_parser("stream", help="dashboard web de flujo de opciones (estilo stream 0DTE)")
-    p_st.add_argument("--mode", choices=["sim", "ibkr"], default="sim",
-                      help="sim = simulador (por defecto); ibkr = datos en vivo de TWS")
-    p_st.add_argument("--symbol", default="QQQ")
+    p_st = sub.add_parser("stream", help="dashboard web multi-vista (flujo de opciones, footprint…)")
+    p_st.add_argument("--mode", choices=["sim", "tradier", "ibkr"], default="sim",
+                      help="sim = simulador; tradier = API Tradier; ibkr = TWS en vivo")
     p_st.add_argument("--web-port", type=int, default=8000)
     p_st.add_argument("--host", default="127.0.0.1", help="host de TWS/Gateway (modo ibkr)")
     p_st.add_argument("--port", type=int, default=7497, help="puerto de TWS/Gateway (modo ibkr)")
     p_st.add_argument("--seed", type=int, help="semilla del simulador (reproducible)")
+    p_st.add_argument("--tradier-token", help="token de Tradier (por defecto: env TRADIER_TOKEN)")
+    p_st.add_argument("--tradier-env", choices=["sandbox", "prod"], default="sandbox",
+                      help="sandbox = gratis con ~15 min de retraso; prod = cuenta de broker")
     p_st.set_defaults(func=cmd_stream)
 
     args = parser.parse_args(argv)
