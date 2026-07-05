@@ -30,6 +30,7 @@ WEB_DIR = Path(__file__).parent / "web"
 
 SOURCE_LABELS = {
     "sim": "Simulación",
+    "yfinance": "Yahoo",
     "tradier": "Tradier",
     "tradier-delayed": "Tradier 15m",
     "ibkr": "IBKR",
@@ -45,6 +46,15 @@ def build_sources(*, seed: int | None = None, ib_host: str = "127.0.0.1", ib_por
     factories: dict[str, object] = {"sim": lambda symbol: SimFeed(symbol, seed=seed)}
     catalog: list[dict] = [
         {"id": "sim", "label": SOURCE_LABELS["sim"], "available": True, "reason": ""}]
+
+    if importlib.util.find_spec("yfinance") is not None:
+        from visual_options.stream.yfinance_feed import YFinanceFeed
+        factories["yfinance"] = lambda symbol: YFinanceFeed(symbol)
+        catalog.append({"id": "yfinance", "label": SOURCE_LABELS["yfinance"], "available": True,
+                        "reason": "datos reales de Yahoo Finance (~15 min de retraso, sin token)"})
+    else:
+        catalog.append({"id": "yfinance", "label": SOURCE_LABELS["yfinance"], "available": False,
+                        "reason": "instala yfinance (uv sync)"})
 
     for source, env in (("tradier", "prod"), ("tradier-delayed", "sandbox")):
         if token:

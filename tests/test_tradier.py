@@ -21,6 +21,9 @@ def option(symbol, strike, opt_type, volume, oi, bid, ask, last, mid_iv=0.20):
     }
 
 
+CHAIN_CALLS = {"count": 0}
+
+
 def api_handler(request: httpx.Request) -> httpx.Response:
     path = request.url.path
     if path.endswith("/markets/quotes"):
@@ -29,10 +32,13 @@ def api_handler(request: httpx.Request) -> httpx.Response:
     if path.endswith("/markets/options/expirations"):
         return httpx.Response(200, json={"expirations": {"date": ["2026-07-06", "2026-07-07"]}})
     if path.endswith("/markets/options/chains"):
+        # cada refresh añade volumen para poder clasificar los incrementos
+        CHAIN_CALLS["count"] += 1
+        extra = (CHAIN_CALLS["count"] - 1) * 400
         return httpx.Response(200, json={"options": {"option": [
-            option("QQQ260706C720", 720.0, "call", 1000, 5000, 2.0, 2.2, 2.05),
-            option("QQQ260706P720", 720.0, "put", 800, 4000, 1.8, 2.0, 1.99),
-            option("QQQ260706C721", 721.0, "call", 500, 2000, 1.5, 1.7, 1.68),
+            option("QQQ260706C720", 720.0, "call", 1000 + extra, 5000, 2.0, 2.2, 2.05),
+            option("QQQ260706P720", 720.0, "put", 800 + extra, 4000, 1.8, 2.0, 1.99),
+            option("QQQ260706C721", 721.0, "call", 500 + extra, 2000, 1.5, 1.7, 1.68),
         ]}})
     if path.endswith("/markets/timesales"):
         return httpx.Response(200, json={"series": {"data": [
@@ -56,13 +62,15 @@ def test_rejects_unknown_env():
 
 
 def test_initialize_and_refresh_chain():
+    CHAIN_CALLS["count"] = 0
     feed = make_feed(api_handler)
 
     async def scenario():
         await feed._initialize()
         assert feed.state.spot == 720.0
         assert feed._expiration == "2026-07-06"
-        await feed._refresh_chain()
+        await feed._refresh_chain()   # línea base: sin clasificar
+        await feed._refresh_chain()   # incrementos de volumen → clasificación
         await feed.close()
 
     asyncio.run(scenario())
@@ -70,13 +78,15 @@ def test_initialize_and_refresh_chain():
     strikes = {r.strike: r for r in feed.state.strikes}
     assert 720.0 in strikes and 721.0 in strikes
     row = strikes[720.0]
-    assert row.call_volume == 1000
-    assert row.put_volume == 800
-    # primera pasada: todo el volumen es delta inicial; call last 2.05 <= mid 2.1 → vendido
+    assert row.call_volume == 1400
+    assert row.put_volume == 1200
+    # incremento: call last 2.05 <= mid 2.1 → vendido
     assert row.call_sold_pct == 100.0
     # put last 1.99 > mid 1.9 → comprado
     assert row.put_sold_pct == 0.0
-    assert len(feed.state.series) == 1
+    # y el bloque de 400 contratos aparece en el tape
+    assert len(feed.state.tape) >= 2
+    assert len(feed.state.series) == 2
 
     # exposiciones dealer calculadas desde OI + mid_iv
     assert row.call_oi == 5000 and row.put_oi == 4000

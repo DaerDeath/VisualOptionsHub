@@ -156,12 +156,18 @@ class TradierFeed:
         return max(0.25, (expiry - datetime.now()).total_seconds() / 86400)
 
     def _classify(self, opt: dict, volume: int) -> float:
-        """% vendido acumulado clasificando deltas de volumen contra el mid."""
+        """% vendido acumulado clasificando deltas de volumen contra el mid.
+
+        La primera foto trae el volumen acumulado de todo el día y no se
+        puede clasificar honestamente: solo fija la línea base.
+        """
         key = opt["symbol"]
-        first_pass = key not in self._last_volume
+        is_baseline = key not in self._last_volume
         delta = volume - self._last_volume.get(key, 0)
         self._last_volume[key] = volume
         stats = self._classified.setdefault(key, {"sold": 0.0, "total": 0.0})
+        if is_baseline:
+            return 50.0
         bid, ask, last = opt.get("bid"), opt.get("ask"), opt.get("last")
         if delta > 0 and bid and ask and last:
             mid = (float(bid) + float(ask)) / 2.0
@@ -169,8 +175,7 @@ class TradierFeed:
             stats["total"] += delta
             if is_sell:
                 stats["sold"] += delta
-            # tape: bloque grande de volumen nuevo (no en la primera foto)
-            if not first_pass and delta >= 300:
+            if delta >= 300:
                 self.state.append_tape(float(opt["strike"]), opt["option_type"],
                                        "sell" if is_sell else "buy", delta,
                                        delta * float(last) * 100)

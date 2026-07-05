@@ -208,7 +208,7 @@ def main(argv: list[str] | None = None) -> None:
     p_ch.set_defaults(func=cmd_chain)
 
     p_st = sub.add_parser("stream", help="dashboard web multi-vista (flujo de opciones, footprint…)")
-    p_st.add_argument("--mode", choices=["sim", "tradier", "tradier-delayed", "ibkr"], default="sim",
+    p_st.add_argument("--mode", choices=["sim", "yfinance", "tradier", "tradier-delayed", "ibkr"], default="sim",
                       help="fuente POR DEFECTO (todas quedan disponibles y se cambian desde la web)")
     p_st.add_argument("--web-port", type=int, default=8000)
     p_st.add_argument("--host", default="127.0.0.1", help="host de TWS/Gateway (modo ibkr)")

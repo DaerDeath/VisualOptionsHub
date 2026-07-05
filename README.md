@@ -101,8 +101,9 @@ Vistas disponibles:
     manuales o auto-precio BSM (`/api/calculator`).
 
 **Proveedor de datos**: se elige desde la propia web con el selector de la
-barra superior — `Simulación`, `Tradier` (tiempo real, cuenta de broker),
-`Tradier 15m` (sandbox gratis con retraso) e `IBKR` (TWS/Gateway). Cada
+barra superior — `Simulación`, `Yahoo` (yfinance: datos reales con ~15 min
+de retraso, sin token ni registro), `Tradier` (tiempo real, cuenta de
+broker), `Tradier 15m` (sandbox gratis con retraso) e `IBKR` (TWS/Gateway). Cada
 fuente aparece deshabilitada si le falta su requisito (token de Tradier en
 `TRADIER_TOKEN` o `--tradier-token`; `uv sync --extra ibkr` para IBKR).
 `--mode` solo fija la fuente por defecto al arrancar; el cambio es por
