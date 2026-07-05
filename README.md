@@ -56,7 +56,35 @@ uv run voptions earnings --spot 100 --avg-move 0.10
 
 # Cadena de opciones en vivo desde IBKR (TWS paper en 7497)
 uv run voptions chain AAPL --port 7497
+
+# Dashboard web de flujo de opciones (estilo streams 0DTE de QQQ)
+uv run voptions stream                          # simulador en http://127.0.0.1:8000
+uv run voptions stream --mode ibkr --symbol QQQ # datos en vivo desde TWS/Gateway
 ```
+
+## Dashboard de flujo (`voptions stream`)
+
+Replica el "Options Premium / Volume Profile" de los streams 0DTE, con la
+lectura que explica el vídeo *how to read the stream's data*:
+
+- **Cadena por strike** (panel superior): calls arriba, puts abajo. El **%
+  es la porción VENDIDA** de ese lado (rojo); el resto es comprada (verde).
+  16% vendido = 84% comprado = muy alcista. El histograma blanco es el
+  perfil visual del volumen y los chips azules el volumen por strike.
+- **Flujo agregado vs precio** (abajo izquierda): la regla del autor es
+  literal — *azul (call sell %) baja → precio sube; roja (put sell %) baja
+  → el precio la sigue*. Call sell % hundiéndose hacia ~10% = squeeze.
+- **Gamma (GEX) por strike**: bolsas negativas = zonas donde el precio
+  acelera; positivas = zonas que lo frenan.
+- **Magnet strikes**: OI de mariposas / volumen; funciona como imán del
+  precio y su sesgo indica hacia dónde gravita la sesión.
+
+Interacción: hover en cualquier panel para el detalle del strike o del
+minuto, clic en la cadena para fijar un strike, espacio o ⏸ para pausar.
+El modo `sim` genera una sesión sintética con esa misma dinámica de flujo;
+el modo `ibkr` clasifica cada incremento de volumen como comprado/vendido
+comparando el último precio con el punto medio bid-ask (aproximación
+Lee-Ready con datos de nivel 1).
 
 ## Uso como librería
 

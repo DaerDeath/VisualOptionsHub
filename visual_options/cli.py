@@ -144,6 +144,12 @@ def cmd_chain(args: argparse.Namespace) -> None:
     fetch_chain_summary(args.symbol, host=args.host, port=args.port, expiries=args.expiries)
 
 
+def cmd_stream(args: argparse.Namespace) -> None:
+    from visual_options.stream.server import run_server
+    run_server(mode=args.mode, symbol=args.symbol, web_port=args.web_port,
+               ib_host=args.host, ib_port=args.port, seed=args.seed)
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="voptions",
                                      description="Toolkit basado en Visual Guide to Options (Jared Levy)")
@@ -199,6 +205,16 @@ def main(argv: list[str] | None = None) -> None:
     p_ch.add_argument("--port", type=int, default=7497, help="7497 paper TWS, 7496 real, 4001/4002 Gateway")
     p_ch.add_argument("--expiries", type=int, default=2, help="número de vencimientos a mostrar")
     p_ch.set_defaults(func=cmd_chain)
+
+    p_st = sub.add_parser("stream", help="dashboard web de flujo de opciones (estilo stream 0DTE)")
+    p_st.add_argument("--mode", choices=["sim", "ibkr"], default="sim",
+                      help="sim = simulador (por defecto); ibkr = datos en vivo de TWS")
+    p_st.add_argument("--symbol", default="QQQ")
+    p_st.add_argument("--web-port", type=int, default=8000)
+    p_st.add_argument("--host", default="127.0.0.1", help="host de TWS/Gateway (modo ibkr)")
+    p_st.add_argument("--port", type=int, default=7497, help="puerto de TWS/Gateway (modo ibkr)")
+    p_st.add_argument("--seed", type=int, help="semilla del simulador (reproducible)")
+    p_st.set_defaults(func=cmd_stream)
 
     args = parser.parse_args(argv)
     args.func(args)
