@@ -13,7 +13,60 @@ const app = {
   paused: false,
   pending: null,
   lastPrice: null,
+  source: "sim",
+  sourcesCatalog: [],
 };
+
+/* ------------------------------------------------ selector de proveedor */
+async function initSources() {
+  try {
+    const cfg = await fetch("/api/config").then(r => r.json());
+    app.sourcesCatalog = cfg.sources;
+    const available = new Set(cfg.sources.filter(s => s.available).map(s => s.id));
+    const saved = localStorage.getItem("vo-source");
+    app.source = available.has(saved) ? saved : cfg.default;
+  } catch (_) {
+    app.sourcesCatalog = [{ id: "sim", label: "Simulación", available: true, reason: "" }];
+    app.source = "sim";
+  }
+  renderSourceNav();
+}
+
+function renderSourceNav() {
+  const nav = el("srcNav");
+  nav.innerHTML = app.sourcesCatalog.map(s => {
+    const active = s.id === app.source ? "active" : "";
+    const disabled = s.available ? "" : "disabled";
+    const title = s.available ? (s.reason || s.label) : s.reason;
+    return `<button class="srcbtn ${active}" data-src="${s.id}" ${disabled} title="${title}">${s.label}</button>`;
+  }).join("");
+  nav.querySelectorAll(".srcbtn:not([disabled])").forEach(btn =>
+    btn.addEventListener("click", () => setSource(btn.dataset.src)));
+}
+
+function setSource(source) {
+  if (source === app.source) return;
+  app.source = source;
+  localStorage.setItem("vo-source", source);
+  renderSourceNav();
+  const homeMode = document.getElementById("homeMode");
+  if (homeMode) homeMode.textContent = sourceLabel();
+  if (app.viewName) {
+    // reconecta la vista actual con el nuevo proveedor
+    if (app.client) { app.client.close(); }
+    app.lastPrice = null;
+    app.client = new StreamClient(app.symbol, onData, source);
+    fetch(`/api/snapshot?symbol=${encodeURIComponent(app.symbol)}&source=${encodeURIComponent(source)}`)
+      .then(r => r.json())
+      .then(onData)
+      .catch(() => {});
+  }
+}
+
+function sourceLabel() {
+  const entry = app.sourcesCatalog.find(s => s.id === app.source);
+  return entry ? entry.label : app.source;
+}
 
 const el = (id) => document.getElementById(id);
 
@@ -64,8 +117,8 @@ function route() {
 
   app.current = VIEWS[view];
   app.current.mount(root);
-  app.client = new StreamClient(symbol, onData);
-  fetch(`/api/snapshot?symbol=${encodeURIComponent(symbol)}`)
+  app.client = new StreamClient(symbol, onData, app.source);
+  fetch(`/api/snapshot?symbol=${encodeURIComponent(symbol)}&source=${encodeURIComponent(app.source)}`)
     .then(r => r.json())
     .then(onData)
     .catch(() => {});
@@ -122,4 +175,4 @@ addEventListener("keydown", (e) => {
 });
 
 addEventListener("hashchange", route);
-route();
+initSources().then(route);

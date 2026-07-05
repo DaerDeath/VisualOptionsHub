@@ -57,17 +57,19 @@ function showTooltip(html, clientX, clientY) {
 }
 function hideTooltip() { tooltipEl.hidden = true; }
 
-/* Cliente WebSocket por símbolo con reconexión. */
+/* Cliente WebSocket por símbolo + fuente de datos, con reconexión. */
 class StreamClient {
-  constructor(symbol, onData) {
+  constructor(symbol, onData, source) {
     this.symbol = symbol;
+    this.source = source || "";
     this.onData = onData;
     this.closed = false;
     this.connect();
   }
   connect() {
     if (this.closed) return;
-    this.ws = new WebSocket(`ws://${location.host}/ws?symbol=${encodeURIComponent(this.symbol)}`);
+    const src = this.source ? `&source=${encodeURIComponent(this.source)}` : "";
+    this.ws = new WebSocket(`ws://${location.host}/ws?symbol=${encodeURIComponent(this.symbol)}${src}`);
     this.ws.onmessage = (ev) => this.onData(JSON.parse(ev.data));
     this.ws.onclose = () => { if (!this.closed) setTimeout(() => this.connect(), 2000); };
   }

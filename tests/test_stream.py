@@ -113,7 +113,11 @@ def test_server_serves_spa_and_snapshot():
             assert asset in index.text
             assert client.get(f"/static/{asset}").status_code == 200
 
-        assert client.get("/api/config").json() == {"mode": "sim"}
+        cfg = client.get("/api/config").json()
+        assert cfg["default"] == "sim"
+        ids = {s["id"]: s for s in cfg["sources"]}
+        assert {"sim", "tradier", "tradier-delayed", "ibkr"} <= set(ids)
+        assert ids["sim"]["available"] is True
 
         snap = client.get("/api/snapshot", params={"symbol": "spy"}).json()
         assert snap["flow"]["symbol"] == "SPY"
@@ -134,3 +138,57 @@ def test_server_websocket_per_symbol():
 def test_server_rejects_unknown_mode():
     with pytest.raises(ValueError):
         create_app(mode="nope")
+
+
+def test_server_default_mode_must_be_available(monkeypatch):
+    monkeypatch.delenv("TRADIER_TOKEN", raising=False)
+    with pytest.raises(SystemExit):
+        create_app(mode="tradier")  # sin token no puede ser la fuente por defecto
+
+
+def test_tradier_sources_available_with_token():
+    app = create_app(mode="sim", tradier_token="tok")
+    with TestClient(app) as client:
+        ids = {s["id"]: s for s in client.get("/api/config").json()["sources"]}
+        assert ids["tradier"]["available"] is True
+        assert ids["tradier-delayed"]["available"] is True
+
+
+def test_tradier_env_sandbox_maps_default_to_delayed():
+    app = create_app(mode="tradier", tradier_token="tok", tradier_env="sandbox")
+    with TestClient(app) as client:
+        assert client.get("/api/config").json()["default"] == "tradier-delayed"
+
+
+def test_snapshot_rejects_unavailable_source(monkeypatch):
+    monkeypatch.delenv("TRADIER_TOKEN", raising=False)
+    app = create_app(mode="sim")
+    with TestClient(app) as client:
+        response = client.get("/api/snapshot", params={"symbol": "QQQ", "source": "tradier"})
+        assert response.status_code == 400
+
+
+def test_snapshot_accepts_explicit_source():
+    app = create_app(mode="sim", seed=2)
+    with TestClient(app) as client:
+        snap = client.get("/api/snapshot", params={"symbol": "QQQ", "source": "sim"}).json()
+        assert snap["flow"]["source"] == "sim"
+
+
+def test_sessions_are_keyed_by_source_and_symbol():
+    import asyncio
+
+    from visual_options.stream.manager import SessionManager, SimFeed
+
+    async def scenario():
+        manager = SessionManager({"sim": lambda s: SimFeed(s, seed=1),
+                                  "sim2": lambda s: SimFeed(s, seed=2)}, default_source="sim")
+        a = await manager.session_for("QQQ", "sim")
+        b = await manager.session_for("QQQ", "sim2")
+        c = await manager.session_for("QQQ", "sim")
+        assert a is c and a is not b
+        with pytest.raises(KeyError):
+            await manager.session_for("QQQ", "nope")
+        await manager.shutdown()
+
+    asyncio.run(scenario())

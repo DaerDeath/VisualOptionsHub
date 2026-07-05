@@ -83,10 +83,13 @@ Vistas disponibles:
    con desglose call/put, totales, spot y nivel de gamma flip.
 4. Huecos para las siguientes (heatmap de OI, DOM, TPO…): pídelas.
 
-Fuentes de datos (`--mode`): `sim` (simulador, por defecto), `tradier`
-(token en `TRADIER_TOKEN` o `--tradier-token`; `--tradier-env sandbox`
-gratis con ~15 min de retraso, `prod` con cuenta de broker) e `ibkr`
-(TWS/IB Gateway en vivo).
+**Proveedor de datos**: se elige desde la propia web con el selector de la
+barra superior — `Simulación`, `Tradier` (tiempo real, cuenta de broker),
+`Tradier 15m` (sandbox gratis con retraso) e `IBKR` (TWS/Gateway). Cada
+fuente aparece deshabilitada si le falta su requisito (token de Tradier en
+`TRADIER_TOKEN` o `--tradier-token`; `uv sync --extra ibkr` para IBKR).
+`--mode` solo fija la fuente por defecto al arrancar; el cambio es por
+sesión y sin reiniciar el servidor.
 
 ## Vista de flujo
 

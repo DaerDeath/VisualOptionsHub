@@ -1,20 +1,26 @@
-"""Servidor del dashboard multi-símbolo: SPA + snapshot REST + WebSocket.
+"""Servidor del dashboard multi-símbolo y multi-fuente: SPA + REST + WebSocket.
 
-Fuentes de datos (--mode):
-  sim      — simulador de sesión por símbolo (por defecto)
-  tradier  — API de Tradier (TRADIER_TOKEN; sandbox con ~15 min de retraso)
-  ibkr     — TWS/IB Gateway en vivo (uv sync --extra ibkr)
+Todas las fuentes disponibles se registran al arrancar y el usuario elige
+en la propia web con qué proveedor alimentar cada vista:
 
-Rutas del frontend (hash): #/  selector · #/flow/QQQ · #/footprint/SPX
+  sim              simulador de sesión (siempre disponible)
+  tradier          API de Tradier en tiempo real (cuenta de broker, env prod)
+  tradier-delayed  API de Tradier sandbox (~15 min de retraso, gratis)
+  ibkr             TWS/IB Gateway en vivo (uv sync --extra ibkr)
+
+Las fuentes de Tradier requieren token (TRADIER_TOKEN o --tradier-token).
+`--mode` fija solo la fuente por defecto.
 """
 
 from __future__ import annotations
 
 import asyncio
 import contextlib
+import importlib.util
+import os
 from pathlib import Path
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -22,23 +28,60 @@ from visual_options.stream.manager import SessionManager, SimFeed
 
 WEB_DIR = Path(__file__).parent / "web"
 
+SOURCE_LABELS = {
+    "sim": "Simulación",
+    "tradier": "Tradier",
+    "tradier-delayed": "Tradier 15m",
+    "ibkr": "IBKR",
+}
 
-def make_feed_factory(mode: str, *, seed: int | None = None, ib_host: str = "127.0.0.1",
-                      ib_port: int = 7497, tradier_token: str | None = None,
-                      tradier_env: str = "sandbox"):
-    if mode == "sim":
-        return lambda symbol: SimFeed(symbol, seed=seed)
-    if mode == "tradier":
-        from visual_options.stream.tradier_feed import TradierFeed
-        return lambda symbol: TradierFeed(symbol, token=tradier_token, env=tradier_env)
-    if mode == "ibkr":
+
+def build_sources(*, seed: int | None = None, ib_host: str = "127.0.0.1", ib_port: int = 7497,
+                  tradier_token: str | None = None) -> tuple[dict, list[dict]]:
+    """Devuelve (factories disponibles, catálogo para /api/config)."""
+    token = tradier_token or os.environ.get("TRADIER_TOKEN", "")
+    has_ib = importlib.util.find_spec("ib_async") is not None
+
+    factories: dict[str, object] = {"sim": lambda symbol: SimFeed(symbol, seed=seed)}
+    catalog: list[dict] = [
+        {"id": "sim", "label": SOURCE_LABELS["sim"], "available": True, "reason": ""}]
+
+    for source, env in (("tradier", "prod"), ("tradier-delayed", "sandbox")):
+        if token:
+            from visual_options.stream.tradier_feed import TradierFeed
+            factories[source] = (lambda environment: lambda symbol: TradierFeed(
+                symbol, token=token, env=environment))(env)
+            catalog.append({"id": source, "label": SOURCE_LABELS[source],
+                            "available": True, "reason": ""})
+        else:
+            catalog.append({"id": source, "label": SOURCE_LABELS[source], "available": False,
+                            "reason": "falta TRADIER_TOKEN (o --tradier-token)"})
+
+    if has_ib:
         from visual_options.stream.ibkr_feed import IBKRFeed
-        return lambda symbol: IBKRFeed(symbol, host=ib_host, port=ib_port)
-    raise ValueError(f"modo desconocido: {mode!r} (usa 'sim', 'tradier' o 'ibkr')")
+        factories["ibkr"] = lambda symbol: IBKRFeed(symbol, host=ib_host, port=ib_port)
+        catalog.append({"id": "ibkr", "label": SOURCE_LABELS["ibkr"], "available": True,
+                        "reason": "requiere TWS/IB Gateway corriendo"})
+    else:
+        catalog.append({"id": "ibkr", "label": SOURCE_LABELS["ibkr"], "available": False,
+                        "reason": "instala con: uv sync --extra ibkr"})
+
+    return factories, catalog
 
 
-def create_app(mode: str = "sim", **feed_kwargs) -> FastAPI:
-    manager = SessionManager(make_feed_factory(mode, **feed_kwargs))
+def create_app(mode: str = "sim", *, seed: int | None = None, ib_host: str = "127.0.0.1",
+               ib_port: int = 7497, tradier_token: str | None = None,
+               tradier_env: str = "sandbox") -> FastAPI:
+    if mode == "tradier" and tradier_env == "sandbox":
+        mode = "tradier-delayed"
+    factories, catalog = build_sources(seed=seed, ib_host=ib_host, ib_port=ib_port,
+                                       tradier_token=tradier_token)
+    if mode not in SOURCE_LABELS:
+        raise ValueError(f"modo desconocido: {mode!r} (usa {list(SOURCE_LABELS)})")
+    if mode not in factories:
+        reason = next(s["reason"] for s in catalog if s["id"] == mode)
+        raise SystemExit(f"la fuente por defecto {mode!r} no está disponible: {reason}")
+    manager = SessionManager(factories, default_source=mode)
 
     @contextlib.asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -47,7 +90,12 @@ def create_app(mode: str = "sim", **feed_kwargs) -> FastAPI:
 
     app = FastAPI(title="visual-options stream", lifespan=lifespan)
     app.state.manager = manager
-    app.state.mode = mode
+
+    def resolve_source(source: str | None) -> str:
+        source = source or manager.default_source
+        if source not in factories:
+            raise HTTPException(status_code=400, detail=f"fuente no disponible: {source}")
+        return source
 
     @app.get("/")
     async def index() -> FileResponse:
@@ -55,20 +103,24 @@ def create_app(mode: str = "sim", **feed_kwargs) -> FastAPI:
 
     @app.get("/api/config")
     async def config() -> dict:
-        return {"mode": mode}
+        return {"default": manager.default_source, "sources": catalog}
 
     @app.get("/api/snapshot")
-    async def snapshot(symbol: str = "QQQ") -> dict:
-        session = await manager.session_for(symbol)
+    async def snapshot(symbol: str = "QQQ", source: str | None = None) -> dict:
+        session = await manager.session_for(symbol, resolve_source(source))
         return {
             "flow": session.feed.state.snapshot(),
             "footprint": session.feed.footprint.snapshot(),
         }
 
     @app.websocket("/ws")
-    async def websocket_endpoint(ws: WebSocket, symbol: str = "QQQ") -> None:
+    async def websocket_endpoint(ws: WebSocket, symbol: str = "QQQ",
+                                 source: str | None = None) -> None:
+        if (source or manager.default_source) not in factories:
+            await ws.close(code=4400, reason="fuente no disponible")
+            return
         await ws.accept()
-        session = await manager.subscribe(symbol, ws)
+        session = await manager.subscribe(symbol, ws, source)
         try:
             await ws.send_text(session.payload())
             while True:
@@ -85,5 +137,5 @@ def create_app(mode: str = "sim", **feed_kwargs) -> FastAPI:
 def run_server(mode: str = "sim", web_port: int = 8000, **feed_kwargs) -> None:
     import uvicorn
     app = create_app(mode=mode, **feed_kwargs)
-    print(f"Dashboard en http://127.0.0.1:{web_port}  (modo {mode})")
+    print(f"Dashboard en http://127.0.0.1:{web_port}  (fuente por defecto: {mode})")
     uvicorn.run(app, host="127.0.0.1", port=web_port, log_level="warning")

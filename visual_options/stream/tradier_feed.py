@@ -45,7 +45,8 @@ class TradierFeed:
             raise ValueError(f"entorno tradier desconocido: {env!r}")
         self.base = BASE_URLS[env]
         self.symbol = symbol.upper()
-        self.state = DashboardState(symbol=self.symbol, spot=0.0, source="tradier", connected=False)
+        source = "tradier" if env == "prod" else "tradier-delayed"
+        self.state = DashboardState(symbol=self.symbol, spot=0.0, source=source, connected=False)
         self.footprint = FootprintBuilder()
         self._client = httpx.AsyncClient(headers={
             "Authorization": f"Bearer {token}",

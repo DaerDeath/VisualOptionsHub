@@ -33,7 +33,7 @@ const HomeView = {
       <div class="home">
         <section class="home-hero">
           <h1>¿Qué quieres ver?</h1>
-          <p class="home-sub">elige un subyacente y una visualización · fuente: <span id="homeMode">…</span></p>
+          <p class="home-sub">elige un subyacente y una visualización · fuente: <span id="homeMode">…</span> <span class="home-sub-hint">(cámbiala arriba a la derecha)</span></p>
           <div class="home-symbol">
             <input id="homeSymbol" value="${saved}" spellcheck="false" autocomplete="off"
                    placeholder="símbolo" maxlength="6">
@@ -52,8 +52,8 @@ const HomeView = {
         </section>
       </div>`;
 
-    fetch("/api/config").then(r => r.json())
-      .then(cfg => { root.querySelector("#homeMode").textContent = cfg.mode; });
+    root.querySelector("#homeMode").textContent =
+      typeof sourceLabel === "function" ? sourceLabel() : "sim";
 
     const input = root.querySelector("#homeSymbol");
     const currentSymbol = () => (input.value.trim().toUpperCase() || "QQQ");

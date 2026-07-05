@@ -109,6 +109,32 @@ body {
 .chip-call .chip-value { color: var(--call-line); }
 
 .session { margin-left: auto; display: flex; align-items: center; gap: 0.8rem; }
+
+.srcnav {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  overflow: hidden;
+  background: var(--surface);
+}
+.srcbtn {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--border);
+  padding: 0.32rem 0.6rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.srcbtn:last-child { border-right: none; }
+.srcbtn:hover:not([disabled]) { color: var(--text); background: var(--surface-2); }
+.srcbtn.active { color: var(--accent); background: var(--surface-2); box-shadow: inset 0 -2px 0 var(--accent); }
+.srcbtn[disabled] { opacity: 0.35; cursor: not-allowed; }
+
+.home-sub-hint { opacity: 0.6; }
 .clock { font-family: var(--mono); color: var(--text-dim); font-variant-numeric: tabular-nums; }
 .status {
   width: 10px; height: 10px; border-radius: 50%;

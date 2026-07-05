@@ -66,26 +66,37 @@ class Session:
 
 
 class SessionManager:
-    def __init__(self, feed_factory) -> None:
-        """feed_factory: (symbol) -> Feed."""
-        self._factory = feed_factory
+    def __init__(self, factories: dict[str, object], default_source: str = "sim") -> None:
+        """factories: id de fuente ('sim', 'tradier'…) → (symbol) -> Feed."""
+        if default_source not in factories:
+            raise ValueError(f"fuente por defecto desconocida: {default_source!r}")
+        self._factories = factories
+        self.default_source = default_source
         self._sessions: dict[str, Session] = {}
         self._lock = asyncio.Lock()
 
-    async def session_for(self, symbol: str) -> Session:
+    @property
+    def sources(self) -> list[str]:
+        return list(self._factories)
+
+    async def session_for(self, symbol: str, source: str | None = None) -> Session:
         symbol = symbol.upper().strip() or "QQQ"
+        source = source or self.default_source
+        if source not in self._factories:
+            raise KeyError(f"fuente desconocida: {source!r} (disponibles: {self.sources})")
+        key = f"{source}:{symbol}"
         async with self._lock:
-            session = self._sessions.get(symbol)
+            session = self._sessions.get(key)
             if session is None:
-                session = Session(symbol=symbol, feed=self._factory(symbol))
+                session = Session(symbol=key, feed=self._factories[source](symbol))
                 # sin clientes desde el arranque: candidata a limpieza
                 session.idle_since = asyncio.get_event_loop().time()
                 session.task = asyncio.create_task(self._run(session))
-                self._sessions[symbol] = session
+                self._sessions[key] = session
             return session
 
-    async def subscribe(self, symbol: str, ws: WebSocket) -> Session:
-        session = await self.session_for(symbol)
+    async def subscribe(self, symbol: str, ws: WebSocket, source: str | None = None) -> Session:
+        session = await self.session_for(symbol, source)
         session.clients.add(ws)
         session.idle_since = None
         return session
