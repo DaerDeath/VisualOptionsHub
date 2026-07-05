@@ -81,7 +81,24 @@ Vistas disponibles:
    sin Excel/Windows/ThinkorSwim: Net GEX, Net DEX y Net Vanna por strike
    calculados con nuestro propio BSM desde OI + IV (`stream/dealer.py`),
    con desglose call/put, totales, spot y nivel de gamma flip.
-4. Huecos para las siguientes (heatmap de OI, DOM, TPO…): pídelas.
+4. **Niveles clave** — nota auto-generada (Founder's Note-like): call/put
+   wall, gamma flip, imán, movimiento esperado y lectura del flujo, con
+   escalera visual de niveles.
+5. **Heatmap GEX** — mapa tiempo × strike del Net GEX (TRACE-like) con el
+   recorrido del spot y el gamma flip superpuestos.
+6. **Impacto del flujo (HIRO-like)** — índice acumulado del flujo de
+   opciones frente al precio para detectar divergencias.
+7. **Volatilidad** — smile de IV por strike, skew put-call, IV ATM y
+   bandas de movimiento esperado ±1σ/±2σ.
+8. **Perfil de OI** — open interest de calls/puts en espejo con PCR.
+9. **Tape** — operaciones destacadas (bloques grandes) con filtros por
+   tipo y lado.
+10. **Scanner** — señales por símbolo (Compass-like): dirección del
+    flujo, Σ GEX, régimen, distancia al flip e IV; ordenable y con lista
+    de símbolos editable (`/api/scan`).
+11. **Calculadora** — las 23 estrategias del libro en la web con P/L
+    (expiración + T+0), breakevens, prob. de beneficio y griegas; primas
+    manuales o auto-precio BSM (`/api/calculator`).
 
 **Proveedor de datos**: se elige desde la propia web con el selector de la
 barra superior — `Simulación`, `Tradier` (tiempo real, cuenta de broker),

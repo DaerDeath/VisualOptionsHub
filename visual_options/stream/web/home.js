@@ -20,8 +20,48 @@ const VIEW_CARDS = [
     art: "dealer",
   },
   {
+    view: "levels", name: "Niveles clave", ready: true,
+    desc: "Nota auto-generada: call/put wall, gamma flip, imán, movimiento esperado y lectura del flujo.",
+    art: "levels",
+  },
+  {
+    view: "heatmap", name: "Heatmap GEX", ready: true,
+    desc: "Mapa tiempo × strike del Net GEX con el recorrido del precio — zonas que frenan o aceleran.",
+    art: "heatmap",
+  },
+  {
+    view: "hiro", name: "Impacto del flujo", ready: true,
+    desc: "Índice acumulado del flujo de opciones frente al precio, para cazar divergencias (HIRO-like).",
+    art: "hiro",
+  },
+  {
+    view: "vol", name: "Volatilidad", ready: true,
+    desc: "Smile de IV por strike, skew, IV ATM y bandas de movimiento esperado ±1σ/±2σ.",
+    art: "vol",
+  },
+  {
+    view: "oi", name: "Perfil de OI", ready: true,
+    desc: "Open interest de calls y puts en espejo por strike con put/call ratio.",
+    art: "oi",
+  },
+  {
+    view: "tape", name: "Tape", ready: true,
+    desc: "Operaciones destacadas en vivo: bloques grandes con lado, contratos y prima.",
+    art: "tape",
+  },
+  {
+    view: "scanner", name: "Scanner", ready: true,
+    desc: "Señales direccionales y de volatilidad por símbolo: flujo, Σ GEX, régimen y distancia al flip.",
+    art: "scanner",
+  },
+  {
+    view: "calc", name: "Calculadora", ready: true,
+    desc: "Las 23 estrategias del libro con P/L, breakevens, prob. de beneficio y griegas.",
+    art: "calc",
+  },
+  {
     view: null, name: "Próximamente", ready: false,
-    desc: "Dime qué más quieres ver aquí: heatmap de open interest, ladder de DOM, perfil TPO…",
+    desc: "Dime qué más quieres ver aquí: ladder de DOM, perfil TPO…",
     art: "plus",
   },
 ];

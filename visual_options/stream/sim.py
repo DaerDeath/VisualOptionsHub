@@ -160,8 +160,12 @@ class SessionSimulator:
             if row.strike % 5 == 0:  # strikes redondos atraen volumen
                 call_intensity *= 1.6
                 put_intensity *= 1.6
-            row.call_volume += int(rng.expovariate(1 / (call_intensity * 28 + 1)) * seconds)
-            row.put_volume += int(rng.expovariate(1 / (put_intensity * 24 + 1)) * seconds)
+            call_added = int(rng.expovariate(1 / (call_intensity * 28 + 1)) * seconds)
+            put_added = int(rng.expovariate(1 / (put_intensity * 24 + 1)) * seconds)
+            row.call_volume += call_added
+            row.put_volume += put_added
+            self._maybe_emit_tape(row, "call", call_added, row.call_sold_pct)
+            self._maybe_emit_tape(row, "put", put_added, row.put_sold_pct)
 
             # % vendido por strike: sigue el agregado; calls OTM más vendidos
             otm_call_bias = max(0.0, distance) * 1.8
@@ -183,6 +187,17 @@ class SessionSimulator:
         # exposiciones dealer (GEX/DEX/vanna) con el BSM real
         compute_exposures(state.strikes, state.spot, state.expiry_days)
         state.gamma_flip = gamma_flip_level(state.strikes)
+        state.snapshot_gex_column()
+
+    def _maybe_emit_tape(self, row: StrikeRow, kind: str, added: int, sold_pct: float) -> None:
+        """Operación destacada: bloque grande de volumen en un strike."""
+        if added < 400:
+            return
+        side = "sell" if self.rng.random() * 100 < sold_pct else "buy"
+        distance = abs(row.strike - self.state.spot)
+        premium_per_contract = max(0.05, 2.2 - distance * 0.25 + self.rng.uniform(-0.2, 0.4))
+        self.state.append_tape(row.strike, kind, side, added,
+                               added * premium_per_contract * 100)
 
 
 def _clamp(value: float, lo: float, hi: float) -> float:

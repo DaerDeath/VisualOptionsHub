@@ -140,6 +140,7 @@ class TradierFeed:
         self.state.expiry_days = self._days_to_expiry()
         compute_exposures(self.state.strikes, self.state.spot, self.state.expiry_days)
         self.state.gamma_flip = gamma_flip_level(self.state.strikes)
+        self.state.snapshot_gex_column()
         self.state.timestamp = datetime.now().strftime("%H:%M:%S")
         self.state.append_point(SeriesPoint(
             t=self.state.timestamp,
@@ -157,15 +158,22 @@ class TradierFeed:
     def _classify(self, opt: dict, volume: int) -> float:
         """% vendido acumulado clasificando deltas de volumen contra el mid."""
         key = opt["symbol"]
+        first_pass = key not in self._last_volume
         delta = volume - self._last_volume.get(key, 0)
         self._last_volume[key] = volume
         stats = self._classified.setdefault(key, {"sold": 0.0, "total": 0.0})
         bid, ask, last = opt.get("bid"), opt.get("ask"), opt.get("last")
         if delta > 0 and bid and ask and last:
             mid = (float(bid) + float(ask)) / 2.0
+            is_sell = float(last) <= mid
             stats["total"] += delta
-            if float(last) <= mid:
+            if is_sell:
                 stats["sold"] += delta
+            # tape: bloque grande de volumen nuevo (no en la primera foto)
+            if not first_pass and delta >= 300:
+                self.state.append_tape(float(opt["strike"]), opt["option_type"],
+                                       "sell" if is_sell else "buy", delta,
+                                       delta * float(last) * 100)
         return 100.0 * stats["sold"] / stats["total"] if stats["total"] else 50.0
 
     async def _refresh_footprint(self) -> None:

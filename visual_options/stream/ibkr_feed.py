@@ -139,3 +139,4 @@ class IBKRFeed:
         from visual_options.stream.dealer import compute_exposures, gamma_flip_level
         compute_exposures(self.state.strikes, self.state.spot, self.state.expiry_days)
         self.state.gamma_flip = gamma_flip_level(self.state.strikes)
+        self.state.snapshot_gex_column()

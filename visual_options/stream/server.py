@@ -113,6 +113,54 @@ def create_app(mode: str = "sim", *, seed: int | None = None, ib_host: str = "12
             "footprint": session.feed.footprint.snapshot(),
         }
 
+    @app.get("/api/calculator/strategies")
+    async def calculator_strategies() -> list[dict]:
+        from visual_options.stream.calculator import strategy_catalog
+        return strategy_catalog()
+
+    @app.get("/api/calculator")
+    async def calculator(strategy: str, params: str = "", auto_price: bool = False,
+                         spot: float | None = None, iv: float | None = None,
+                         days: float | None = None, rate: float = 0.04) -> dict:
+        """params: pares nombre=valor separados por comas."""
+        from visual_options.stream.calculator import analyze, build_strategy
+        parsed = dict(pair.split("=", 1) for pair in params.split(",") if "=" in pair)
+        try:
+            built = build_strategy(strategy, parsed, auto_price=auto_price,
+                                   spot=spot, iv=iv, days=days, rate=rate)
+            return analyze(built, spot=spot, iv=iv, days=days, rate=rate)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+
+    @app.get("/api/scan")
+    async def scan(symbols: str = "QQQ,SPY,SPX,IWM,NVDA,TSLA,AAPL,MSFT",
+                   source: str | None = None) -> list[dict]:
+        """Señales por símbolo (Compass-like) desde las sesiones vivas."""
+        resolved = resolve_source(source)
+        results = []
+        for symbol in [s.strip().upper() for s in symbols.split(",") if s.strip()][:16]:
+            session = await manager.session_for(symbol, resolved)
+            state = session.feed.state
+            snap = state.snapshot()
+            total_gex = sum(r.net_gex for r in state.strikes)
+            atm = min(state.strikes, key=lambda r: abs(r.strike - state.spot)) if state.strikes else None
+            direction = snap["put_sell_pct"] - snap["call_sell_pct"]
+            results.append({
+                "symbol": symbol,
+                "spot": snap["spot"],
+                "put_sell_pct": snap["put_sell_pct"],
+                "call_sell_pct": snap["call_sell_pct"],
+                "direction_score": round(direction, 2),
+                "total_gex": round(total_gex, 1),
+                "regime": "amortiguador" if total_gex >= 0 else "acelerador",
+                "gamma_flip": snap["gamma_flip"],
+                "flip_distance_pct": round((state.spot - snap["gamma_flip"]) / state.spot * 100, 2)
+                                     if snap["gamma_flip"] and state.spot else None,
+                "atm_iv": round(atm.iv, 4) if atm else None,
+                "connected": snap["connected"],
+            })
+        return results
+
     @app.websocket("/ws")
     async def websocket_endpoint(ws: WebSocket, symbol: str = "QQQ",
                                  source: str | None = None) -> None:

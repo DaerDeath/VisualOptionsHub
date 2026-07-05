@@ -12,6 +12,8 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 
 MAX_SERIES_POINTS = 900  # ~ una sesión completa a un punto cada ~26 s
+MAX_GEX_HISTORY = 150    # columnas del heatmap tiempo × strike
+MAX_TAPE_EVENTS = 120    # operaciones destacadas retenidas
 
 
 @dataclass
@@ -55,6 +57,10 @@ class DashboardState:
     gamma_flip: float | None = None  # nivel de cruce del Net GEX acumulado
     strikes: list[StrikeRow] = field(default_factory=list)
     series: list[SeriesPoint] = field(default_factory=list)
+    # heatmap TRACE-like: cada entrada {t, spot, gex: [net_gex por strike]}
+    gex_history: list[dict] = field(default_factory=list)
+    # tape de operaciones destacadas: {t, strike, kind, side, size, premium}
+    tape: list[dict] = field(default_factory=list)
 
     @property
     def put_sell_pct(self) -> float:
@@ -76,6 +82,26 @@ class DashboardState:
         if len(self.series) > MAX_SERIES_POINTS:
             del self.series[: len(self.series) - MAX_SERIES_POINTS]
 
+    def snapshot_gex_column(self) -> None:
+        """Guarda la foto actual del Net GEX por strike para el heatmap."""
+        self.gex_history.append({
+            "t": self.timestamp,
+            "spot": round(self.spot, 2),
+            "gex": [round(r.net_gex, 2) for r in self.strikes],
+        })
+        if len(self.gex_history) > MAX_GEX_HISTORY:
+            del self.gex_history[: len(self.gex_history) - MAX_GEX_HISTORY]
+
+    def append_tape(self, strike: float, kind: str, side: str, size: int,
+                    premium: float) -> None:
+        """Registra una operación destacada (kind: call/put; side: buy/sell)."""
+        self.tape.append({
+            "t": self.timestamp, "strike": strike, "kind": kind,
+            "side": side, "size": size, "premium": round(premium, 0),
+        })
+        if len(self.tape) > MAX_TAPE_EVENTS:
+            del self.tape[: len(self.tape) - MAX_TAPE_EVENTS]
+
     def snapshot(self) -> dict:
         """Estado serializable que consume el frontend.
 
@@ -95,4 +121,6 @@ class DashboardState:
             "gamma_flip": self.gamma_flip,
             "strikes": [asdict(r) for r in self.strikes],
             "series": [asdict(p) for p in self.series],
+            "gex_history": self.gex_history,
+            "tape": self.tape,
         }
