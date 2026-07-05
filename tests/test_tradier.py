@@ -13,11 +13,11 @@ def make_feed(handler) -> TradierFeed:
                        transport=httpx.MockTransport(handler))
 
 
-def option(symbol, strike, opt_type, volume, oi, bid, ask, last, gamma=0.01):
+def option(symbol, strike, opt_type, volume, oi, bid, ask, last, mid_iv=0.20):
     return {
         "symbol": symbol, "strike": strike, "option_type": opt_type,
         "volume": volume, "open_interest": oi, "bid": bid, "ask": ask, "last": last,
-        "greeks": {"gamma": gamma},
+        "greeks": {"gamma": 0.01, "mid_iv": mid_iv},
     }
 
 
@@ -76,8 +76,15 @@ def test_initialize_and_refresh_chain():
     assert row.call_sold_pct == 100.0
     # put last 1.99 > mid 1.9 → comprado
     assert row.put_sold_pct == 0.0
-    assert row.gamma_exposure != 0.0
     assert len(feed.state.series) == 1
+
+    # exposiciones dealer calculadas desde OI + mid_iv
+    assert row.call_oi == 5000 and row.put_oi == 4000
+    assert row.iv == pytest.approx(0.20)
+    assert row.call_gex > 0 and row.put_gex < 0
+    assert row.net_gex == pytest.approx(row.call_gex + row.put_gex)
+    assert row.gamma_exposure == pytest.approx(row.net_gex)
+    assert feed.state.expiry_days > 0
 
 
 def test_refresh_footprint_builds_bars():

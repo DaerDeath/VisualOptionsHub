@@ -16,6 +16,7 @@ import math
 import random
 from datetime import datetime, timedelta
 
+from visual_options.stream.dealer import compute_exposures, gamma_flip_level
 from visual_options.stream.footprint import FootprintBuilder
 from visual_options.stream.state import DashboardState, SeriesPoint, StrikeRow
 
@@ -68,7 +69,9 @@ class SessionSimulator:
             strikes=[StrikeRow(strike=float(base + i * step))
                      for i in range(-STRIKE_SPAN, STRIKE_SPAN + 1)],
         )
+        self.state.expiry_days = 1.0  # cadena 0DTE
         self._seed_magnet_profile()
+        self._seed_open_interest()
         for _ in range(40):  # arranque con algo de historia
             self.tick(seconds=60)
 
@@ -116,6 +119,20 @@ class SessionSimulator:
             call_sell_pct=round(self.call_sell, 3),
         ))
 
+    def _seed_open_interest(self) -> None:
+        """OI en campana alrededor del dinero con extra en strikes redondos,
+        e IV con smile (skew a la baja, típico de índices)."""
+        rng = self.rng
+        step = strike_step_for(self.spot0)
+        for row in self.state.strikes:
+            distance = (row.strike - self.spot0) / step
+            bell = math.exp(-0.5 * (distance / 7.0) ** 2)
+            boost = 1.9 if row.strike % 5 == 0 else 1.0
+            row.call_oi = int(bell * boost * rng.uniform(4000, 14000) * (1.25 if distance > 0 else 1.0))
+            row.put_oi = int(bell * boost * rng.uniform(4000, 14000) * (1.25 if distance < 0 else 1.0))
+            moneyness = (row.strike - self.spot0) / self.spot0
+            row.iv = max(0.08, 0.17 - moneyness * 0.9 + abs(moneyness) * 1.6 + rng.gauss(0, 0.004))
+
     def _emit_trades(self, prev_spot: float, seconds: float) -> None:
         """Genera prints sintéticos entre prev_spot y el spot actual para el footprint."""
         rng = self.rng
@@ -156,14 +173,16 @@ class SessionSimulator:
                 row.put_sold_pct + (45 + self.put_sell + otm_put_bias - row.put_sold_pct) * 0.05
                 + rng.gauss(0, 1.2), 5, 90)
 
-            # GEX: positivo bajo el spot, bolsas negativas en strikes clave
-            base_gamma = math.exp(-0.5 * (distance / 6.0) ** 2)
-            sign = 1.0 if distance < 0 else -0.6
-            if row.strike % 5 == 0 and distance > 0:
-                sign = -1.4
-            row.gamma_exposure += (sign * base_gamma * 20 - row.gamma_exposure) * 0.03 + rng.gauss(0, 0.4)
+            # el OI se mueve poco intradía; la IV respira con el flujo
+            row.call_oi = max(0, row.call_oi + int(rng.gauss(0, 6) * seconds / 60))
+            row.put_oi = max(0, row.put_oi + int(rng.gauss(0, 6) * seconds / 60))
+            row.iv = max(0.05, row.iv + rng.gauss(0, 0.0006) * math.sqrt(seconds / 60))
 
             row.magnet = max(0.0, row.magnet + rng.gauss(0, 0.004))
+
+        # exposiciones dealer (GEX/DEX/vanna) con el BSM real
+        compute_exposures(state.strikes, state.spot, state.expiry_days)
+        state.gamma_flip = gamma_flip_level(state.strikes)
 
 
 def _clamp(value: float, lo: float, hi: float) -> float:

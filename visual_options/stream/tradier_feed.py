@@ -21,6 +21,7 @@ from datetime import datetime
 
 import httpx
 
+from visual_options.stream.dealer import compute_exposures, gamma_flip_level
 from visual_options.stream.footprint import FootprintBuilder
 from visual_options.stream.state import DashboardState, SeriesPoint, StrikeRow
 
@@ -106,6 +107,7 @@ class TradierFeed:
         selected = set(strikes_all[lo: center_idx + STRIKE_SPAN + 1])
         rows = {k: StrikeRow(strike=k) for k in sorted(selected)}
 
+        iv_sum: dict[float, list[float]] = {}
         for opt in options:
             strike = float(opt["strike"])
             row = rows.get(strike)
@@ -115,21 +117,28 @@ class TradierFeed:
             sold_pct = self._classify(opt, volume)
             oi = int(opt.get("open_interest") or 0)
             greeks = opt.get("greeks") or {}
-            gamma = float(greeks.get("gamma") or 0.0)
-            gex = gamma * oi * 100 * self.state.spot ** 2 * 0.01 / 1e6
+            mid_iv = float(greeks.get("mid_iv") or greeks.get("smv_vol") or 0.0)
+            if mid_iv > 0:
+                iv_sum.setdefault(strike, []).append(mid_iv)
 
             if opt["option_type"] == "call":
                 row.call_volume = volume
                 row.call_sold_pct = sold_pct
-                row.gamma_exposure += gex
+                row.call_oi = oi
                 row.magnet += oi / max(volume, 1)
             else:
                 row.put_volume = volume
                 row.put_sold_pct = sold_pct
-                row.gamma_exposure -= gex
+                row.put_oi = oi
                 row.magnet += oi / max(volume, 1)
 
+        for strike, ivs in iv_sum.items():
+            rows[strike].iv = sum(ivs) / len(ivs)
+
         self.state.strikes = list(rows.values())
+        self.state.expiry_days = self._days_to_expiry()
+        compute_exposures(self.state.strikes, self.state.spot, self.state.expiry_days)
+        self.state.gamma_flip = gamma_flip_level(self.state.strikes)
         self.state.timestamp = datetime.now().strftime("%H:%M:%S")
         self.state.append_point(SeriesPoint(
             t=self.state.timestamp,
@@ -137,6 +146,12 @@ class TradierFeed:
             put_sell_pct=round(self.state.put_sell_pct, 3),
             call_sell_pct=round(self.state.call_sell_pct, 3),
         ))
+
+    def _days_to_expiry(self) -> float:
+        if not self._expiration:
+            return 1.0
+        expiry = datetime.strptime(self._expiration, "%Y-%m-%d")
+        return max(0.25, (expiry - datetime.now()).total_seconds() / 86400)
 
     def _classify(self, opt: dict, volume: int) -> float:
         """% vendido acumulado clasificando deltas de volumen contra el mid."""

@@ -2,8 +2,8 @@
  * Gestiona la barra superior, el WebSocket por símbolo y la pausa. */
 "use strict";
 
-const VIEWS = { flow: FlowView, footprint: FootprintView };
-const VIEW_TITLES = { flow: "flujo de opciones", footprint: "footprint" };
+const VIEWS = { flow: FlowView, footprint: FootprintView, dealer: DealerView };
+const VIEW_TITLES = { flow: "flujo de opciones", footprint: "footprint", dealer: "dealer positioning" };
 
 const app = {
   current: HomeView,

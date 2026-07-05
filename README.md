@@ -77,7 +77,11 @@ Vistas disponibles:
 2. **Footprint** — velas con volumen comprador × vendedor por nivel de
    precio, delta y volumen por barra, POC (ámbar) e imbalances diagonales
    ≥3× (borde rojo/verde).
-3. Huecos para las siguientes (heatmap de OI, DOM, TPO…): pídelas.
+3. **Dealer positioning** — réplica de la hoja CloutSeeker (liquidose)
+   sin Excel/Windows/ThinkorSwim: Net GEX, Net DEX y Net Vanna por strike
+   calculados con nuestro propio BSM desde OI + IV (`stream/dealer.py`),
+   con desglose call/put, totales, spot y nivel de gamma flip.
+4. Huecos para las siguientes (heatmap de OI, DOM, TPO…): pídelas.
 
 Fuentes de datos (`--mode`): `sim` (simulador, por defecto), `tradier`
 (token en `TRADIER_TOKEN` o `--tradier-token`; `--tradier-env sandbox`

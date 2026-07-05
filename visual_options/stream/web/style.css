@@ -206,6 +206,22 @@ canvas { flex: 1; width: 100%; height: 100%; display: block; cursor: crosshair; 
 .fp-wrap { display: flex; padding: 8px; min-height: 0; }
 .fp-wrap .panel { flex: 1; }
 
+/* --------------------------------------------------------------- dealer */
+.dealer-wrap { display: flex; padding: 8px; min-height: 0; }
+.dealer-wrap .panel { flex: 1; }
+.dealer-totals { margin-left: auto; display: flex; gap: 0.5rem; }
+.dtotal {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+}
+.dtotal.pos { color: var(--bought); }
+.dtotal.neg { color: var(--sold); }
+.dtotal.flip { color: #c65dd9; border-color: #c65dd9; }
+
 /* ------------------------------------------------------------------ home */
 .home {
   flex: 1;
@@ -319,6 +335,15 @@ canvas { flex: 1; width: 100%; height: 100%; display: block; cursor: crosshair; 
   background-size: 14px 70%;
   background-position: 24% center;
   box-shadow: inset 46px 0 0 -32px rgba(47,164,99,.35), inset -46px 0 0 -32px rgba(224,67,63,.35);
+}
+.art-dealer {
+  background-image:
+    linear-gradient(90deg, transparent 49.5%, var(--border) 49.5%, var(--border) 50.5%, transparent 50.5%),
+    repeating-linear-gradient(180deg,
+      transparent 0 3px, rgba(47,164,99,.45) 3px 8px, transparent 8px 11px,
+      rgba(224,67,63,.45) 11px 16px);
+  background-size: 100% 100%, 62% 100%;
+  background-position: center, 58% center;
 }
 .art-plus::before {
   content: "+";

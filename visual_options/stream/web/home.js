@@ -15,6 +15,11 @@ const VIEW_CARDS = [
     art: "footprint",
   },
   {
+    view: "dealer", name: "Dealer positioning", ready: true,
+    desc: "Net GEX, Net DEX y Net Vanna por strike con gamma flip — lo que calcula CloutSeeker, sin Excel ni Windows.",
+    art: "dealer",
+  },
+  {
     view: null, name: "Próximamente", ready: false,
     desc: "Dime qué más quieres ver aquí: heatmap de open interest, ladder de DOM, perfil TPO…",
     art: "plus",

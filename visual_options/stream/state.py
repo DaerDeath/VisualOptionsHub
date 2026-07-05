@@ -21,8 +21,19 @@ class StrikeRow:
     call_sold_pct: float = 50.0   # % del volumen de calls que se VENDIÓ
     put_volume: int = 0
     put_sold_pct: float = 50.0
-    gamma_exposure: float = 0.0   # GEX en millones de $ por 1% de movimiento
+    gamma_exposure: float = 0.0   # Net GEX en millones de $ por 1% de movimiento
     magnet: float = 0.0           # OI de mariposas / volumen (perfil imán)
+    # posicionamiento de dealers (vista CloutSeeker); ver stream/dealer.py
+    call_oi: int = 0
+    put_oi: int = 0
+    iv: float = 0.0               # IV media del strike (fracción, p.ej. 0.22)
+    call_gex: float = 0.0
+    put_gex: float = 0.0
+    net_gex: float = 0.0
+    net_dex: float = 0.0
+    call_vanna: float = 0.0
+    put_vanna: float = 0.0
+    net_vanna: float = 0.0
 
 
 @dataclass
@@ -38,8 +49,10 @@ class DashboardState:
     symbol: str
     spot: float
     timestamp: str = ""
-    source: str = "sim"           # "sim" | "ibkr"
+    source: str = "sim"           # "sim" | "tradier" | "ibkr"
     connected: bool = True
+    expiry_days: float = 1.0      # días a expiración de la cadena mostrada
+    gamma_flip: float | None = None  # nivel de cruce del Net GEX acumulado
     strikes: list[StrikeRow] = field(default_factory=list)
     series: list[SeriesPoint] = field(default_factory=list)
 
@@ -78,6 +91,8 @@ class DashboardState:
             "connected": self.connected,
             "put_sell_pct": round(last.put_sell_pct if last else self.put_sell_pct, 4),
             "call_sell_pct": round(last.call_sell_pct if last else self.call_sell_pct, 4),
+            "expiry_days": self.expiry_days,
+            "gamma_flip": self.gamma_flip,
             "strikes": [asdict(r) for r in self.strikes],
             "series": [asdict(p) for p in self.series],
         }

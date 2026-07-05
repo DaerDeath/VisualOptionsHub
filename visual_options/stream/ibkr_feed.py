@@ -68,6 +68,8 @@ class IBKRFeed:
             chains = await ib.reqSecDefOptParamsAsync(stock.symbol, "", stock.secType, stock.conId)
             chain = next(c for c in chains if c.exchange == "SMART")
             expiry = sorted(chain.expirations)[0]  # 0DTE / vencimiento más cercano
+            expiry_dt = datetime.strptime(expiry, "%Y%m%d")
+            self.state.expiry_days = max(0.25, (expiry_dt - datetime.now()).total_seconds() / 86400)
             base = round(self.state.spot)
             strikes = [float(k) for k in range(base - STRIKE_SPAN, base + STRIKE_SPAN + 1)
                        if k in {int(s) for s in chain.strikes}]
@@ -124,14 +126,16 @@ class IBKRFeed:
                 row.put_sold_pct = sold_pct
 
             greeks = t.modelGreeks
-            if greeks and greeks.gamma is not None and self.state.spot:
-                # GEX ≈ gamma · OI · 100 · spot² · 1% , en millones; signo dealer:
-                # calls comprados por dealers (+), puts (-) — convención simple
-                open_interest = getattr(t, "callOpenInterest" if contract.right == "C"
-                                        else "putOpenInterest", 0) or volume
-                sign = 1.0 if contract.right == "C" else -1.0
-                gex = sign * greeks.gamma * open_interest * 100 * self.state.spot ** 2 * 0.01 / 1e6
-                if contract.right == "C":
-                    row.gamma_exposure = gex + (row.gamma_exposure if row.put_volume else 0)
-                else:
-                    row.gamma_exposure += gex
+            if greeks and greeks.impliedVol:
+                row.iv = float(greeks.impliedVol)
+            open_interest = getattr(t, "callOpenInterest" if contract.right == "C"
+                                    else "putOpenInterest", 0) or volume
+            if contract.right == "C":
+                row.call_oi = int(open_interest)
+            else:
+                row.put_oi = int(open_interest)
+
+        # exposiciones dealer (GEX/DEX/vanna) con OI + IV recogidos
+        from visual_options.stream.dealer import compute_exposures, gamma_flip_level
+        compute_exposures(self.state.strikes, self.state.spot, self.state.expiry_days)
+        self.state.gamma_flip = gamma_flip_level(self.state.strikes)
