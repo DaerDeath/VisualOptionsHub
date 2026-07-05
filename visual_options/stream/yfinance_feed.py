@@ -12,6 +12,7 @@ yfinance es síncrono: cada refresco corre en un hilo (asyncio.to_thread).
 from __future__ import annotations
 
 import asyncio
+import math
 from datetime import datetime
 
 from visual_options.stream.dealer import compute_exposures, gamma_flip_level
@@ -21,6 +22,19 @@ from visual_options.stream.state import DashboardState, SeriesPoint, StrikeRow
 STRIKE_SPAN = 11
 POLL_SECONDS = 20.0
 TAPE_THRESHOLD = 300
+
+
+def _num(value, default: float = 0.0) -> float:
+    """Convierte a float tratando None/NaN/strings raras como `default`.
+
+    Yahoo devuelve NaN en volumen, OI, bid/ask… de contratos sin operar,
+    y NaN es truthy: `int(nan or 0)` revienta.
+    """
+    try:
+        value = float(value)
+    except (TypeError, ValueError):
+        return default
+    return default if math.isnan(value) else value
 
 
 class YFinanceFeed:
@@ -87,14 +101,17 @@ class YFinanceFeed:
         info = getattr(self._ticker, "fast_info", None)
         for key in ("last_price", "lastPrice"):
             try:
-                value = info[key] if info is not None else None
+                value = _num(info[key] if info is not None else None)
             except (KeyError, TypeError):
-                value = None
-            if value:
-                return float(value)
+                value = 0.0
+            if value > 0:
+                return value
         history = self._ticker.history(period="1d", interval="1m")
         if len(history):
-            return float(history["Close"].iloc[-1])
+            closes = history["Close"].dropna()
+            if len(closes):
+                value = _num(closes.iloc[-1])
+                return value if value > 0 else None
         return None
 
     def _refresh_chain(self) -> None:
@@ -114,9 +131,9 @@ class YFinanceFeed:
                 row = rows.get(strike)
                 if row is None:
                     continue
-                volume = int(record.get("volume") or 0)
-                oi = int(record.get("openInterest") or 0)
-                iv = float(record.get("impliedVolatility") or 0.0)
+                volume = int(_num(record.get("volume")))
+                oi = int(_num(record.get("openInterest")))
+                iv = _num(record.get("impliedVolatility"))
                 sold_pct = self._classify(record, kind, volume)
                 if kind == "call":
                     row.call_volume, row.call_sold_pct, row.call_oi = volume, sold_pct, oi
@@ -141,17 +158,19 @@ class YFinanceFeed:
         if is_baseline:
             # la primera foto trae el acumulado del día: solo sirve de línea base
             return 50.0
-        bid, ask, last = record.get("bid"), record.get("ask"), record.get("lastPrice")
-        if delta > 0 and bid and ask and last:
-            mid = (float(bid) + float(ask)) / 2.0
-            is_sell = float(last) <= mid
+        bid = _num(record.get("bid"))
+        ask = _num(record.get("ask"))
+        last = _num(record.get("lastPrice"))
+        if delta > 0 and bid > 0 and ask > 0 and last > 0:
+            mid = (bid + ask) / 2.0
+            is_sell = last <= mid
             stats["total"] += delta
             if is_sell:
                 stats["sold"] += delta
             if delta >= TAPE_THRESHOLD:
                 self.state.append_tape(float(record["strike"]), kind,
                                        "sell" if is_sell else "buy", delta,
-                                       delta * float(last) * 100)
+                                       delta * last * 100)
         return 100.0 * stats["sold"] / stats["total"] if stats["total"] else 50.0
 
     def _refresh_footprint(self) -> None:
@@ -161,7 +180,10 @@ class YFinanceFeed:
         prev_close: float | None = None
         for timestamp, bar in history.iterrows():
             label = timestamp.strftime("%H:%M")
-            close, volume = float(bar["Close"]), int(bar.get("Volume") or 0)
+            close = _num(bar.get("Close"))
+            volume = int(_num(bar.get("Volume")))
+            if close <= 0:
+                continue
             if self._last_bar is not None and label <= self._last_bar:
                 prev_close = close
                 continue
@@ -170,9 +192,9 @@ class YFinanceFeed:
                 continue
             is_buy = prev_close is None or close >= prev_close
             third = volume // 3
-            trades = [(float(bar["Low"]), third, not is_buy),
+            trades = [(_num(bar.get("Low"), close), third, not is_buy),
                       (close, volume - 2 * third, is_buy),
-                      (float(bar["High"]), third, is_buy)]
+                      (_num(bar.get("High"), close), third, is_buy)]
             self.footprint.add_trades(label, [t for t in trades if t[1] > 0], bar_key=label)
             prev_close = close
             self._last_bar = label

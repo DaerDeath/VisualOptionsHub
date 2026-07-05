@@ -86,6 +86,48 @@ def test_footprint_from_1m_bars_without_duplicates():
     assert feed.footprint.bars[1].delta < 0  # 719.9 < 720.0 → downtick
 
 
+def test_nan_values_do_not_crash():
+    """Yahoo devuelve NaN en contratos sin operar: no debe reventar."""
+
+    class NaNTicker(FakeTicker):
+        def __init__(self, symbol):
+            super().__init__(symbol)
+            self.fast_info = {"last_price": float("nan")}
+
+        def option_chain(self, expiration):
+            nan = float("nan")
+            calls = pd.DataFrame([
+                {"contractSymbol": "QQQ0706C720", "strike": 720.0, "lastPrice": nan,
+                 "bid": nan, "ask": nan, "volume": nan, "openInterest": nan,
+                 "impliedVolatility": nan},
+            ])
+            puts = pd.DataFrame([
+                {"contractSymbol": "QQQ0706P720", "strike": 720.0, "lastPrice": 1.99,
+                 "bid": 1.8, "ask": 2.0, "volume": 800, "openInterest": 4500,
+                 "impliedVolatility": 0.20},
+            ])
+            return type("Chain", (), {"calls": calls, "puts": puts})()
+
+        def history(self, period="1d", interval="1m"):
+            nan = float("nan")
+            idx = pd.to_datetime(["2026-07-02 09:30", "2026-07-02 09:31"])
+            return pd.DataFrame({
+                "Open": [719.5, nan], "High": [720.1, nan],
+                "Low": [719.3, nan], "Close": [720.0, nan],
+                "Volume": [90000, nan],
+            }, index=idx)
+
+    feed = YFinanceFeed("QQQ", ticker_factory=lambda s: NaNTicker(s))
+    feed._refresh()  # no debe lanzar
+    # el spot cae al último Close válido del histórico
+    assert feed.state.spot == 720.0
+    row = {r.strike: r for r in feed.state.strikes}[720.0]
+    assert row.call_volume == 0 and row.call_oi == 0
+    assert row.put_volume == 800
+    # la vela con NaN se descarta; la válida construye el footprint
+    assert len(feed.footprint.bars) == 1
+
+
 def test_expiry_days_positive():
     feed = make_feed()
     feed._refresh()
