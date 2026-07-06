@@ -3,13 +3,14 @@
 "use strict";
 
 const VIEWS = {
-  flow: FlowView, footprint: FootprintView, dealer: DealerView,
+  flow: FlowView, setup: SetupView, footprint: FootprintView, dealer: DealerView,
   levels: LevelsView, heatmap: HeatmapView, hiro: HiroView,
   vol: VolView, oi: OIView, tape: TapeView,
   scanner: ScannerView, calc: CalcView,
 };
 const VIEW_TITLES = {
-  flow: "flujo de opciones", footprint: "footprint", dealer: "dealer positioning",
+  flow: "flujo de opciones", setup: "setup: footprint + wyckoff + vp",
+  footprint: "footprint", dealer: "dealer positioning",
   levels: "niveles clave", heatmap: "heatmap GEX", hiro: "impacto del flujo",
   vol: "volatilidad", oi: "perfil de OI", tape: "tape",
   scanner: "scanner", calc: "calculadora",

@@ -10,6 +10,11 @@ const VIEW_CARDS = [
     art: "flow",
   },
   {
+    view: "setup", name: "Setup: footprint + Wyckoff + VP", ready: true,
+    desc: "El setup completo en un apartado: velas con eventos Wyckoff (spring, UT, SOS/SOW, absorción), Volume Profile con POC/VAH/VAL y footprint.",
+    art: "setup",
+  },
+  {
     view: "footprint", name: "Footprint", ready: true,
     desc: "Velas con volumen comprador y vendedor por nivel de precio, delta por barra, POC e imbalances.",
     art: "footprint",
