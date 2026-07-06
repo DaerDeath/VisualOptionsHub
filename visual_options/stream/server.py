@@ -142,6 +142,42 @@ def create_app(mode: str = "sim", *, seed: int | None = None, ib_host: str = "12
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc))
 
+    @app.get("/api/stats")
+    async def stats_endpoint(symbol: str = "QQQ", interval: str = "15m") -> dict:
+        import asyncio as _asyncio
+
+        from visual_options.stream import stats as stats_mod
+        if interval not in stats_mod.PERIOD_FOR_INTERVAL:
+            raise HTTPException(status_code=400, detail=f"intervalo no soportado: {interval}")
+        try:
+            return await _asyncio.to_thread(stats_mod.analyze, symbol.upper(), interval)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"descarga de datos falló: {exc}")
+
+    @app.get("/api/stats/montecarlo")
+    async def montecarlo_endpoint(symbol: str = "QQQ", interval: str = "15m",
+                                  horizon: int = 96, paths: int = 2000,
+                                  bootstrap: bool = True) -> dict:
+        import asyncio as _asyncio
+
+        from visual_options.stream import stats as stats_mod
+
+        def run() -> dict:
+            returns, last_price = stats_mod.fetch_log_returns(symbol.upper(), interval)
+            return stats_mod.monte_carlo(returns, last_price,
+                                         horizon=min(max(horizon, 8), 500),
+                                         paths=min(max(paths, 200), 10000),
+                                         bootstrap=bootstrap)
+
+        try:
+            return await _asyncio.to_thread(run)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"descarga de datos falló: {exc}")
+
     @app.get("/api/scan")
     async def scan(symbols: str = "QQQ,SPY,SPX,IWM,NVDA,TSLA,AAPL,MSFT",
                    source: str | None = None) -> list[dict]:

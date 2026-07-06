@@ -439,6 +439,14 @@ canvas { flex: 1; width: 100%; height: 100%; display: block; cursor: crosshair; 
 .art-alertsart::before { content: "🔔"; font-size: 1.4rem; }
 .art-journalart::before { content: "✎"; color: var(--text-dim); }
 .art-guideart::before { content: "?"; color: var(--call-line); }
+.art-statsart::before {
+  content: "Σ";
+  display: grid;
+  place-items: center;
+  height: 100%;
+  font-size: 1.7rem;
+  color: var(--bought);
+}
 .art-plus::before {
   content: "+";
   display: grid;
@@ -634,6 +642,45 @@ td.neg, .metric.neg b { color: var(--sold); }
 .vtile i { font-size: 0.66rem; color: var(--text-dim); font-style: normal; }
 .vtile.pos b { color: var(--bought); }
 .vtile.neg b { color: var(--sold); }
+
+/* ----------------------------------------------------- estadísticos */
+.stats-wrap { display: flex; padding: 8px; min-height: 0; }
+.stats-wrap .panel { flex: 1; }
+.stats-controls { margin-left: auto; display: flex; gap: 0.4rem; align-items: center; }
+.stats-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(340px, 1.1fr) 1.4fr;
+  gap: 10px;
+  padding: 10px;
+}
+.stats-cards { overflow-y: auto; display: flex; flex-direction: column; gap: 0.6rem; }
+.stat-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--text-dim);
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+}
+.stat-card.ok { border-left-color: var(--bought); }
+.stat-card.warn { border-left-color: var(--accent); }
+.stat-card.fail { border-left-color: var(--sold); }
+.st-head { display: flex; justify-content: space-between; align-items: baseline; gap: 0.6rem; }
+.st-head b { font-size: 0.88rem; }
+.st-verdict { font-family: var(--mono); font-size: 0.72rem; }
+.stat-card.ok .st-verdict { color: var(--bought); }
+.stat-card.warn .st-verdict { color: var(--accent); }
+.stat-card.fail .st-verdict { color: var(--sold); }
+.st-does { font-size: 0.74rem; color: var(--text-dim); margin: 0.25rem 0; }
+.st-result { font-family: var(--mono); font-size: 0.8rem; margin-bottom: 0.25rem; }
+.st-note { font-size: 0.72rem; color: var(--text-dim); font-style: italic; }
+.stats-mc { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+.stats-mc canvas { flex: 1; min-height: 260px; }
+
+@media (max-width: 980px) {
+  .stats-body { grid-template-columns: 1fr; }
+}
 
 /* -------------------------------------------------- alertas / diario */
 .alerts-wrap {

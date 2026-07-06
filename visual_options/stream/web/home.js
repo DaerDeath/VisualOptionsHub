@@ -96,6 +96,11 @@ const VIEW_CARDS = [
     art: "oi",
   },
   {
+    view: "stats", name: "Estadísticos", ready: true,
+    desc: "Tus notebooks ARIMA+GARCH corregidos: cada test con su explicación y veredicto, y Monte Carlo de 2.000 rutas con un botón.",
+    art: "statsart",
+  },
+  {
     view: "alerts", name: "Alertas", ready: true,
     desc: "Avisos locales: precio cruza nivel, call sell % bajo (squeeze), cruce del gamma flip. Beep + notificación.",
     art: "alertsart",
