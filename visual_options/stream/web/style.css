@@ -206,6 +206,42 @@ body {
 
 canvas { flex: 1; width: 100%; height: 100%; display: block; cursor: crosshair; }
 
+/* -------------------------------------------------- buscador de símbolos */
+.sym-dd {
+  position: fixed;
+  z-index: 30;
+  max-height: 380px;
+  overflow-y: auto;
+  background: rgba(13, 18, 26, 0.98);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.55);
+  padding: 4px;
+}
+.sym-item {
+  display: flex;
+  align-items: baseline;
+  gap: 0.7rem;
+  padding: 0.42rem 0.65rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.sym-item b {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  color: var(--accent);
+  min-width: 4.5ch;
+}
+.sym-item span {
+  font-size: 0.74rem;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sym-item.hl { background: var(--surface-2); }
+.sym-item.hl span { color: var(--text); }
+
 /* --------------------------------------------------------------- tooltip */
 .tooltip {
   position: fixed;

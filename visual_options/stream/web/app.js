@@ -158,14 +158,11 @@ function updateHeader(flow) {
   status.title = flow.source === "sim" ? "simulador" : (flow.connected ? flow.source + " conectado" : "desconectado");
 }
 
-/* Cambio de símbolo desde la barra superior. */
-el("symbolInput").addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && app.viewName) {
-    const symbol = e.target.value.trim().toUpperCase();
-    if (symbol) location.hash = `#/${app.viewName}/${symbol}`;
-    e.target.blur();
-  }
-});
+/* Cambio de símbolo desde la barra superior (con autocompletado). */
+function gotoSymbol(symbol) {
+  if (symbol && app.viewName) location.hash = `#/${app.viewName}/${symbol}`;
+}
+attachSymbolPicker(el("symbolInput"), { onPick: gotoSymbol, onEnter: gotoSymbol });
 
 /* Pausa. */
 function togglePause() {

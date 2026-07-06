@@ -1,7 +1,8 @@
 /* Vista de inicio: elegir símbolo y tipo de visualización. */
 "use strict";
 
-const QUICK_SYMBOLS = ["QQQ", "SPY", "SPX", "IWM", "NVDA", "TSLA", "AAPL", "MSFT", "META", "AMZN"];
+const QUICK_SYMBOLS = ["QQQ", "SPY", "SPX", "IWM", "DIA", "VIX", "NVDA", "TSLA", "AAPL", "MSFT",
+                       "META", "AMZN", "GOOGL", "AMD", "NFLX", "COIN", "PLTR", "SMCI"];
 
 const VIEW_CARDS = [
   {
@@ -113,11 +114,12 @@ const HomeView = {
         location.hash = `#/${card.dataset.view}/${symbol}`;
       }));
 
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        localStorage.setItem("vo-symbol", currentSymbol());
-        location.hash = `#/flow/${currentSymbol()}`;
-      }
+    attachSymbolPicker(input, {
+      onPick: (symbol) => localStorage.setItem("vo-symbol", symbol),
+      onEnter: (symbol) => {
+        localStorage.setItem("vo-symbol", symbol || "QQQ");
+        location.hash = `#/flow/${symbol || "QQQ"}`;
+      },
     });
     input.focus();
     input.select();
