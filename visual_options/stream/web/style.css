@@ -516,6 +516,25 @@ canvas { flex: 1; width: 100%; height: 100%; display: block; cursor: crosshair; 
   line-height: 1.7;
   color: var(--text);
 }
+.art-chainart::before {
+  content: "Δ";
+  display: grid;
+  place-items: center;
+  height: 100%;
+  font-size: 1.7rem;
+  color: var(--accent);
+}
+.chain-table td, .chain-table th { padding: 0.32rem 0.45rem; font-size: 0.73rem; }
+.chain-side { text-align: center !important; letter-spacing: 0.2em; }
+.chain-side.call { color: var(--call-line); }
+.chain-side.put { color: var(--put-line); }
+.chain-strike {
+  text-align: center !important;
+  background: var(--surface-2);
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+}
+.chain-itm { background: rgba(93, 179, 217, 0.05); }
 .art-plus::before {
   content: "+";
   display: grid;

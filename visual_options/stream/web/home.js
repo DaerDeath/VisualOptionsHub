@@ -41,6 +41,11 @@ const VIEW_CARDS = [
     art: "hiro",
   },
   {
+    view: "chain", name: "Cadena + griegas", ready: true,
+    desc: "Todas las opciones del vencimiento con precio teórico y griegas completas (Δ Γ Θ V ρ) por call y put, en vivo.",
+    art: "chainart",
+  },
+  {
     view: "vol", name: "Volatilidad", ready: true,
     desc: "Smile de IV por strike, skew, IV ATM y bandas de movimiento esperado ±1σ/±2σ.",
     art: "vol",

@@ -42,6 +42,11 @@ const GUIDE_SECTIONS = [
     <p>Índice acumulado del flujo: sube cuando se venden puts / compran calls con agresión.
     <b>Divergencias</b>: si el precio hace máximos y el índice no (o al revés), el movimiento
     pierde gasolina. El área verde/roja indica presión neta acumulada de la sesión.</p>`],
+  ["Cadena + griegas", "chain", `
+    <p>La cadena completa del vencimiento con precio teórico BSM y las griegas por contrato:
+    <b>Δ</b> (sensibilidad al precio; también ≈ prob. de expirar ITM), <b>Γ</b> (cómo cambia la delta),
+    <b>Θ</b> (lo que pierde por día), <b>V</b> (sensibilidad a 1% de IV) y <b>ρ</b> (a 1% de tipos).
+    Fila ámbar = ATM. Nota: Γ y V son iguales para call y put del mismo strike — es matemática, no un error.</p>`],
   ["Volatilidad", "vol", `
     <p><b>Smile de IV</b> por strike: el skew negativo (puts OTM más caros) es lo normal en índices.
     Skew muy empinado = miedo a caídas; aplanamiento = complacencia.
