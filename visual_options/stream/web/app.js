@@ -89,6 +89,37 @@ function sourceLabel() {
 
 const el = (id) => document.getElementById(id);
 
+/* Navegación agrupada (compartida con el home). */
+const NAV_GROUPS = [
+  ["Mercado", ["flow", "dealer", "levels", "heatmap", "hiro", "oi", "tape"]],
+  ["Precio", ["setup", "footprint", "vwap", "cvd", "tpo"]],
+  ["Opciones", ["vol", "probs", "maxpain", "pcr", "calc"]],
+  ["Análisis", ["scanner", "stats", "notebooks"]],
+  ["Herramientas", ["alerts", "journal", "guide"]],
+];
+const NAV_SHORT = {
+  flow: "Flujo", dealer: "Dealer", levels: "Niveles", heatmap: "Heatmap GEX",
+  hiro: "HIRO", oi: "Perfil OI", tape: "Tape",
+  setup: "Setup FP+Wyckoff+VP", footprint: "Footprint", vwap: "VWAP", cvd: "CVD", tpo: "TPO",
+  vol: "Volatilidad", probs: "Probabilidades", maxpain: "Max Pain", pcr: "Put/Call", calc: "Calculadora",
+  scanner: "Scanner", stats: "Estadísticos", notebooks: "Notebooks",
+  alerts: "Alertas", journal: "Diario", guide: "Guía",
+};
+
+function renderNav(activeView, symbol) {
+  const nav = el("viewNav");
+  nav.innerHTML = NAV_GROUPS.map(([group, views]) => {
+    const isActiveGroup = views.includes(activeView);
+    const label = isActiveGroup ? NAV_SHORT[activeView] : group;
+    return `<div class="navgroup ${isActiveGroup ? "active" : ""}">
+      <button class="navgroup-btn">${label} <span class="caret">▾</span></button>
+      <div class="navgroup-menu">
+        ${views.map(view => `<a href="#/${view}/${symbol}" class="${view === activeView ? "active" : ""}">${NAV_SHORT[view]}</a>`).join("")}
+      </div>
+    </div>`;
+  }).join("");
+}
+
 function parseHash() {
   const parts = location.hash.replace(/^#\/?/, "").split("/").filter(Boolean);
   if (parts.length >= 1 && VIEWS[parts[0]]) {
@@ -129,10 +160,7 @@ function route() {
   app.symbol = symbol;
   localStorage.setItem("vo-symbol", symbol);
   el("symbolInput").value = symbol;
-  document.querySelectorAll("#viewNav a").forEach(a => {
-    a.classList.toggle("active", a.dataset.view === view);
-    a.href = `#/${a.dataset.view}/${symbol}`;
-  });
+  renderNav(view, symbol);
 
   app.current = VIEWS[view];
   app.current.mount(root);

@@ -57,6 +57,72 @@ function showTooltip(html, clientX, clientY) {
 }
 function hideTooltip() { tooltipEl.hidden = true; }
 
+/* Viewport de barras con pan + zoom para gráficos temporales.
+ * rueda = zoom anclado al cursor · arrastrar = pan · doble clic = reset. */
+class BarViewport {
+  constructor(redraw) {
+    this.start = null;   // null = pegado al final (siguiendo el directo)
+    this.count = null;   // null = nº de barras por defecto
+    this.redraw = redraw;
+    this.dragging = false;
+  }
+  view(total, defaultCount) {
+    let count = Math.round(clamp(this.count ?? Math.min(total, defaultCount), 3, Math.max(3, total)));
+    let start = this.start ?? (total - count);
+    start = Math.round(clamp(start, 0, Math.max(0, total - count)));
+    return { start, count, end: start + count };
+  }
+  zoom(factor, anchorFrac, total, defaultCount) {
+    const v = this.view(total, defaultCount);
+    const anchorBar = v.start + anchorFrac * v.count;
+    this.count = clamp(v.count * factor, 3, total);
+    this.start = anchorBar - anchorFrac * this.count;
+    this.redraw();
+  }
+  pan(deltaBars, total, defaultCount) {
+    const v = this.view(total, defaultCount);
+    this.start = clamp(v.start + deltaBars, 0, Math.max(0, total - v.count));
+    this.count = v.count;
+    this.redraw();
+  }
+  reset() {
+    this.start = null;
+    this.count = null;
+    this.redraw();
+  }
+  /* opts: { total(), defaultCount(), plot() → [xIzq, ancho] } */
+  attach(canvas, opts) {
+    canvas.addEventListener("wheel", (e) => {
+      e.preventDefault();
+      const [left, width] = opts.plot();
+      const frac = clamp((e.offsetX - left) / Math.max(1, width), 0, 1);
+      this.zoom(e.deltaY > 0 ? 1.18 : 1 / 1.18, frac, opts.total(), opts.defaultCount());
+    }, { passive: false });
+
+    let lastX = null, accum = 0;
+    canvas.addEventListener("pointerdown", (e) => {
+      lastX = e.clientX;
+      accum = 0;
+      canvas.setPointerCapture(e.pointerId);
+    });
+    canvas.addEventListener("pointermove", (e) => {
+      if (lastX === null) return;
+      const [, width] = opts.plot();
+      const v = this.view(opts.total(), opts.defaultCount());
+      accum += Math.abs(e.clientX - lastX);
+      if (accum > 4) this.dragging = true;   // distinguir clic de arrastre
+      this.pan(-(e.clientX - lastX) * v.count / Math.max(1, width), opts.total(), opts.defaultCount());
+      lastX = e.clientX;
+    });
+    const stop = () => { lastX = null; setTimeout(() => { this.dragging = false; }, 0); };
+    canvas.addEventListener("pointerup", stop);
+    canvas.addEventListener("pointercancel", stop);
+    canvas.addEventListener("dblclick", () => this.reset());
+  }
+}
+
+const ZOOM_HINT = "rueda = zoom · arrastra = mover · doble clic = reset";
+
 /* Cliente WebSocket por símbolo + fuente de datos, con reconexión. */
 class StreamClient {
   constructor(symbol, onData, source) {

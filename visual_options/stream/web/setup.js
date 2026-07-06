@@ -20,7 +20,7 @@ const SetupView = {
         <section class="panel setup-chart">
           <div class="panel-head">
             <h2>Wyckoff + Volume Profile</h2>
-            <span class="hint">eventos heurísticos: SPRING/UT en área de valor · SOS/SOW rupturas con delta · ABS = mucho volumen, poco recorrido · POC ámbar · VAH/VAL punteados</span>
+            <span class="hint">SPRING/UT en área de valor · SOS/SOW rupturas · ABS = absorción · POC ámbar · ${ZOOM_HINT}</span>
           </div>
           <canvas id="setupChart"></canvas>
         </section>
@@ -32,11 +32,23 @@ const SetupView = {
       </div>`;
 
     this.chart = new Panel(root.querySelector("#setupChart"), (c, w, h) => this.drawChart(c, w, h));
+    this.vp = new BarViewport(() => this.chart && this.chart.draw());
+    this.vp.attach(this.chart.canvas, {
+      total: () => (this.data ? this.data.bars.length : 0),
+      defaultCount: () => (this.data ? this.data.bars.length : 1),
+      plot: () => [this.PAD.l, this.chart.w - this.PAD.l - this.PAD.r],
+    });
     // footprint embebido: delega en FootprintView vía prototipo
     this.fp = Object.create(FootprintView);
     this.fp.data = null;
     this.fp.hover = { bar: -1, level: null };
     this.fp.panel = new Panel(root.querySelector("#setupFp"), (c, w, h) => this.fp.draw(c, w, h));
+    this.fp.vp = new BarViewport(() => this.fp.panel && this.fp.panel.draw());
+    this.fp.vp.attach(this.fp.panel.canvas, {
+      total: () => (this.fp.data ? this.fp.data.bars.length : 0),
+      defaultCount: () => Math.max(3, Math.floor((this.fp.panel.w - this.fp.PAD.l - this.fp.PAD.r) / 110)),
+      plot: () => [this.fp.PAD.l, this.fp.panel.w - this.fp.PAD.l - this.fp.PAD.r],
+    });
     this.fp.attachMouse();
     this.attachMouse();
   },
@@ -140,7 +152,11 @@ const SetupView = {
     const vp = this.profile();
     if (!vp) return null;
     const P = this.PAD;
-    const bars = this.data.bars;
+    const all = this.data.bars;
+    const range = this.vp ? this.vp.view(all.length, all.length)
+                          : { start: 0, end: all.length };
+    const bars = all.slice(range.start, range.end);
+    if (!bars.length) return null;
     const colW = (w - P.l - P.r) / bars.length;
     let hi = Math.max(...bars.map(b => b.high));
     let lo = Math.min(...bars.map(b => b.low));
@@ -254,6 +270,7 @@ const SetupView = {
   attachMouse() {
     const canvas = this.chart.canvas;
     canvas.addEventListener("pointermove", (e) => {
+      if (this.vp && this.vp.dragging) { hideTooltip(); return; }
       const g = this.geometry(this.chart.w, this.chart.h);
       if (!g) return;
       if (e.offsetX > this.chart.w - this.PAD.r) { this.hover = -1; hideTooltip(); this.chart.draw(); return; }

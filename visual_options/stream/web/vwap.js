@@ -14,13 +14,19 @@ const VwapView = {
         <section class="panel">
           <div class="panel-head">
             <h2>VWAP + bandas</h2>
-            <span class="hint">ámbar = VWAP (precio institucional) · bandas = ±1σ/±2σ ponderadas por volumen · encima del VWAP mandan los compradores</span>
+            <span class="hint">ámbar = VWAP · bandas ±1σ/±2σ ponderadas por volumen · ${ZOOM_HINT}</span>
           </div>
           <canvas id="vwapCanvas"></canvas>
         </section>
       </div>`;
     this.tilesEl = root.querySelector("#vwapTiles");
     this.panel = new Panel(root.querySelector("#vwapCanvas"), (c, w, h) => this.draw(c, w, h));
+    this.vp = new BarViewport(() => this.panel && this.panel.draw());
+    this.vp.attach(this.panel.canvas, {
+      total: () => (this.data ? this.data.bars.length : 0),
+      defaultCount: () => (this.data ? this.data.bars.length : 1),
+      plot: () => [this.PAD.l, this.panel.w - this.PAD.l - this.PAD.r],
+    });
     this.attachMouse();
   },
 
@@ -77,11 +83,18 @@ const VwapView = {
 
   PAD: { l: 12, r: 58, t: 14, b: 24 },
 
+  visibleRange(w) {
+    const all = this.data.bars;
+    return this.vp ? this.vp.view(all.length, all.length) : { start: 0, end: all.length };
+  },
+
   draw(ctx, w, h) {
     if (!this.data || this.data.bars.length < 2) return;
     const P = this.PAD;
-    const bars = this.data.bars;
-    const vwaps = this.series();
+    const range = this.visibleRange(w);
+    const bars = this.data.bars.slice(range.start, range.end);
+    const vwaps = this.series().slice(range.start, range.end);
+    if (bars.length < 2) return;
     const allValues = bars.flatMap(b => [b.high, b.low])
       .concat(vwaps.flatMap(v => [v.vwap + 2 * v.sd, v.vwap - 2 * v.sd]));
     const hi = Math.max(...allValues), lo = Math.min(...allValues);
@@ -141,12 +154,15 @@ const VwapView = {
     const canvas = this.panel.canvas;
     canvas.addEventListener("pointermove", (e) => {
       if (!this.data || this.data.bars.length < 2) return;
+      if (this.vp && this.vp.dragging) { hideTooltip(); return; }
       const P = this.PAD;
-      const bars = this.data.bars;
+      const range = this.visibleRange(this.panel.w);
+      const bars = this.data.bars.slice(range.start, range.end);
+      if (!bars.length) return;
       const colW = (this.panel.w - P.l - P.r) / bars.length;
       const i = clamp(Math.floor((e.offsetX - P.l) / colW), 0, bars.length - 1);
       this.hover = i;
-      const v = this.series()[i];
+      const v = this.series()[range.start + i];
       const bar = bars[i];
       showTooltip(
         `<div class="tt-title">${bar.t}</div>` +

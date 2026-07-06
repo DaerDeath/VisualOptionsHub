@@ -128,6 +128,30 @@ const VIEW_CARDS = [
 ];
 
 const HomeView = {
+  renderSections() {
+    const byView = new Map(VIEW_CARDS.filter(c => c.view).map(c => [c.view, c]));
+    const used = new Set();
+    const cardHtml = (c) => `
+      <button class="card ${c.ready ? "" : "card-disabled"}" data-view="${c.view ?? ""}">
+        <span class="card-art art-${c.art}" aria-hidden="true"></span>
+        <span class="card-name">${c.name}</span>
+        <span class="card-desc">${c.desc}</span>
+      </button>`;
+    let html = NAV_GROUPS.map(([group, views]) => {
+      const cards = views.map(v => { used.add(v); return byView.get(v); }).filter(Boolean);
+      if (!cards.length) return "";
+      return `<section class="home-sec">
+        <h2 class="home-sec-title">${group}</h2>
+        <div class="cards">${cards.map(cardHtml).join("")}</div>
+      </section>`;
+    }).join("");
+    const rest = VIEW_CARDS.filter(c => !c.view || !used.has(c.view));
+    if (rest.length) {
+      html += `<section class="home-sec"><div class="cards">${rest.map(cardHtml).join("")}</div></section>`;
+    }
+    return html;
+  },
+
   mount(root) {
     const saved = localStorage.getItem("vo-symbol") || "QQQ";
     root.innerHTML = `
@@ -143,14 +167,7 @@ const HomeView = {
             </div>
           </div>
         </section>
-        <section class="cards">
-          ${VIEW_CARDS.map(c => `
-            <button class="card ${c.ready ? "" : "card-disabled"}" data-view="${c.view ?? ""}">
-              <span class="card-art art-${c.art}" aria-hidden="true"></span>
-              <span class="card-name">${c.name}</span>
-              <span class="card-desc">${c.desc}</span>
-            </button>`).join("")}
-        </section>
+        ${this.renderSections()}
       </div>`;
 
     root.querySelector("#homeMode").textContent =

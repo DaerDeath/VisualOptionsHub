@@ -14,12 +14,18 @@ const FootprintView = {
         <section class="panel panel-fp">
           <div class="panel-head">
             <h2>Footprint</h2>
-            <span class="hint">vendido × comprado por nivel · ámbar = POC · borde = imbalance ≥3× diagonal · abajo: delta y volumen</span>
+            <span class="hint">vendido × comprado por nivel · ámbar = POC · borde = imbalance ≥3× · ${ZOOM_HINT}</span>
           </div>
           <canvas id="fpCanvas"></canvas>
         </section>
       </div>`;
     this.panel = new Panel(root.querySelector("#fpCanvas"), (c, w, h) => this.draw(c, w, h));
+    this.vp = new BarViewport(() => this.panel && this.panel.draw());
+    this.vp.attach(this.panel.canvas, {
+      total: () => (this.data ? this.data.bars.length : 0),
+      defaultCount: () => Math.max(3, Math.floor((this.panel.w - this.PAD.l - this.PAD.r) / 110)),
+      plot: () => [this.PAD.l, this.panel.w - this.PAD.l - this.PAD.r],
+    });
     this.attachMouse();
   },
 
@@ -41,8 +47,11 @@ const FootprintView = {
   geometry(w, h) {
     const P = this.PAD;
     const bars = this.data.bars;
-    const colW = Math.max(84, Math.min(150, (w - P.l - P.r) / Math.max(1, bars.length)));
-    const visible = bars.slice(-Math.max(1, Math.floor((w - P.l - P.r) / colW)));
+    const defaultCount = Math.max(3, Math.floor((w - P.l - P.r) / 110));
+    const range = this.vp ? this.vp.view(bars.length, defaultCount)
+                          : { start: Math.max(0, bars.length - defaultCount), end: bars.length, count: Math.min(bars.length, defaultCount) };
+    const visible = bars.slice(range.start, range.end);
+    const colW = (w - P.l - P.r) / Math.max(1, visible.length);
     const tick = this.data.tick;
     let hi = -Infinity, lo = Infinity;
     visible.forEach(b => { hi = Math.max(hi, b.high); lo = Math.min(lo, b.low); });
@@ -50,9 +59,11 @@ const FootprintView = {
     hi = Math.ceil(hi / tick) * tick;
     lo = Math.floor(lo / tick) * tick;
     const levels = Math.max(1, Math.round((hi - lo) / tick) + 1);
-    const rowH = Math.max(this.MIN_ROW_H, Math.min(26, (h - P.t - P.b) / levels));
-    const yFor = (price) => P.t + (hi - price) / tick * rowH + rowH / 2;
-    return { visible, colW, tick, hi, lo, levels, rowH, yFor };
+    const plotH = h - P.t - P.b;
+    const rowH = Math.max(this.MIN_ROW_H, Math.min(30, plotH / levels));
+    const yOffset = P.t + Math.max(0, (plotH - rowH * levels) / 2);
+    const yFor = (price) => yOffset + (hi - price) / tick * rowH + rowH / 2;
+    return { visible, colW, tick, hi, lo, levels, rowH, yFor, yOffset };
   },
 
   draw(ctx, w, h) {
@@ -61,7 +72,7 @@ const FootprintView = {
     const g = this.geometry(w, h);
     if (!g) return;
     const { visible, colW, tick, rowH, yFor } = g;
-    const showText = rowH >= 12;
+    const showText = rowH >= 12 && colW >= 54;
     const maxCell = Math.max(1, ...visible.flatMap(b => b.cells.map(c => c.buy + c.sell)));
 
     // eje de precios a la derecha
@@ -155,10 +166,11 @@ const FootprintView = {
     const canvas = this.panel.canvas;
     canvas.addEventListener("pointermove", (e) => {
       if (!this.data || !this.data.bars.length) return;
+      if (this.vp && this.vp.dragging) { hideTooltip(); return; }
       const g = this.geometry(this.panel.w, this.panel.h);
       if (!g) return;
       const bi = clamp(Math.floor((e.offsetX - this.PAD.l) / g.colW), 0, g.visible.length - 1);
-      const price = g.hi - Math.round((e.offsetY - this.PAD.t - g.rowH / 2) / g.rowH) * g.tick;
+      const price = g.hi - Math.round((e.offsetY - g.yOffset - g.rowH / 2) / g.rowH) * g.tick;
       const bar = g.visible[bi];
       const cell = bar.cells.find(c => Math.abs(c.price - price) < g.tick / 2);
       this.hover = { bar: bi, level: cell ? cell.price : null };
