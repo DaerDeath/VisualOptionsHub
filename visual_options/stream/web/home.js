@@ -66,8 +66,53 @@ const VIEW_CARDS = [
     art: "calc",
   },
   {
+    view: "maxpain", name: "Max Pain", ready: true,
+    desc: "El precio de vencimiento que minimiza el pago a los compradores de opciones — el imán teórico del expiry.",
+    art: "maxpain",
+  },
+  {
+    view: "cvd", name: "Delta acumulado (CVD)", ready: true,
+    desc: "Agresión compradora − vendedora acumulada vs precio, con divergencias marcadas automáticamente.",
+    art: "hiro",
+  },
+  {
+    view: "tpo", name: "Perfil TPO", ready: true,
+    desc: "Market Profile con letras por periodo, initial balance y POC — aceptación vs rechazo de precios.",
+    art: "tpo",
+  },
+  {
+    view: "probs", name: "Probabilidades", ready: true,
+    desc: "Cono de movimiento esperado ±1σ/±2σ y probabilidad de expirar ITM por strike.",
+    art: "probs",
+  },
+  {
+    view: "vwap", name: "VWAP + sesión", ready: true,
+    desc: "Velas con VWAP y bandas ±1σ/±2σ más el resumen estadístico de la sesión.",
+    art: "vwapart",
+  },
+  {
+    view: "pcr", name: "Put/Call Ratio", ready: true,
+    desc: "PCR por volumen y por open interest con lectura contraria y desglose por strike.",
+    art: "oi",
+  },
+  {
+    view: "alerts", name: "Alertas", ready: true,
+    desc: "Avisos locales: precio cruza nivel, call sell % bajo (squeeze), cruce del gamma flip. Beep + notificación.",
+    art: "alertsart",
+  },
+  {
+    view: "journal", name: "Diario", ready: true,
+    desc: "Notas de trading con hora, símbolo y precio capturados automáticamente.",
+    art: "journalart",
+  },
+  {
+    view: "guide", name: "Guía", ready: true,
+    desc: "Cómo leer cada apartado de la terminal: reglas, conceptos y trucos, en cristiano.",
+    art: "guideart",
+  },
+  {
     view: null, name: "Próximamente", ready: false,
-    desc: "Dime qué más quieres ver aquí: ladder de DOM, perfil TPO…",
+    desc: "Dime qué más quieres ver aquí y lo añado.",
     art: "plus",
   },
 ];

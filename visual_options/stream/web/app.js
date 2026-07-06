@@ -7,6 +7,9 @@ const VIEWS = {
   levels: LevelsView, heatmap: HeatmapView, hiro: HiroView,
   vol: VolView, oi: OIView, tape: TapeView,
   scanner: ScannerView, calc: CalcView,
+  maxpain: MaxPainView, cvd: CvdView, tpo: TpoView, probs: ProbsView,
+  vwap: VwapView, pcr: PcrView, alerts: AlertsView, journal: JournalView,
+  guide: GuideView,
 };
 const VIEW_TITLES = {
   flow: "flujo de opciones", setup: "setup: footprint + wyckoff + vp",
@@ -14,6 +17,9 @@ const VIEW_TITLES = {
   levels: "niveles clave", heatmap: "heatmap GEX", hiro: "impacto del flujo",
   vol: "volatilidad", oi: "perfil de OI", tape: "tape",
   scanner: "scanner", calc: "calculadora",
+  maxpain: "max pain", cvd: "delta acumulado", tpo: "perfil TPO",
+  probs: "probabilidades", vwap: "vwap + sesión", pcr: "put/call ratio",
+  alerts: "alertas", journal: "diario", guide: "guía",
 };
 
 const app = {
@@ -138,6 +144,7 @@ function route() {
 function onData(payload) {
   if (app.paused) { app.pending = payload; return; }
   updateHeader(payload.flow);
+  AlertsEngine.check(payload.flow);
   app.current.onData(payload);
 }
 
