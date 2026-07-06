@@ -178,6 +178,18 @@ def create_app(mode: str = "sim", *, seed: int | None = None, ib_host: str = "12
         except Exception as exc:
             raise HTTPException(status_code=502, detail=f"descarga de datos falló: {exc}")
 
+    @app.get("/api/notebooks")
+    async def notebooks_endpoint(symbol: str = "ES=F", variant: str = "daily") -> dict:
+        import asyncio as _asyncio
+
+        from visual_options.stream import notebooks as nb_mod
+        try:
+            return await _asyncio.to_thread(nb_mod.original_projection, symbol.upper(), variant)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"descarga o ajuste falló: {exc}")
+
     @app.get("/api/scan")
     async def scan(symbols: str = "QQQ,SPY,SPX,IWM,NVDA,TSLA,AAPL,MSFT",
                    source: str | None = None) -> list[dict]:

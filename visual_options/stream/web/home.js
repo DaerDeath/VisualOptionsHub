@@ -101,6 +101,11 @@ const VIEW_CARDS = [
     art: "statsart",
   },
   {
+    view: "notebooks", name: "Notebooks (original)", ready: true,
+    desc: "Tu gráfico histórico + proyección ARIMA+GARCH tal cual los .ipynb, sin cambios — informativo.",
+    art: "nbart",
+  },
+  {
     view: "alerts", name: "Alertas", ready: true,
     desc: "Avisos locales: precio cruza nivel, call sell % bajo (squeeze), cruce del gamma flip. Beep + notificación.",
     art: "alertsart",

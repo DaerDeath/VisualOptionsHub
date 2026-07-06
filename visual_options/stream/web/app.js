@@ -8,7 +8,7 @@ const VIEWS = {
   vol: VolView, oi: OIView, tape: TapeView,
   scanner: ScannerView, calc: CalcView,
   maxpain: MaxPainView, cvd: CvdView, tpo: TpoView, probs: ProbsView,
-  vwap: VwapView, pcr: PcrView, stats: StatsView,
+  vwap: VwapView, pcr: PcrView, stats: StatsView, notebooks: NotebooksView,
   alerts: AlertsView, journal: JournalView,
   guide: GuideView,
 };
@@ -20,7 +20,8 @@ const VIEW_TITLES = {
   scanner: "scanner", calc: "calculadora",
   maxpain: "max pain", cvd: "delta acumulado", tpo: "perfil TPO",
   probs: "probabilidades", vwap: "vwap + sesión", pcr: "put/call ratio",
-  stats: "estadísticos", alerts: "alertas", journal: "diario", guide: "guía",
+  stats: "estadísticos", notebooks: "notebooks (original)",
+  alerts: "alertas", journal: "diario", guide: "guía",
 };
 
 const app = {
