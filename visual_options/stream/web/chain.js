@@ -43,6 +43,18 @@ const ChainGreeks = (() => {
   };
 })();
 
+const CHAIN_COL_TIPS = {
+  "Vol": ["Volumen", "Contratos operados hoy en este strike y lado."],
+  "OI": ["Open Interest", "Posiciones abiertas (contratos vivos). Los picos actúan de imán/soporte."],
+  "IV": ["Volatilidad implícita", "La volatilidad que el mercado descuenta para este strike. Alta = opción cara."],
+  "Prec": ["Precio teórico", "Valor Black-Scholes con la IV del strike. Compáralo con el precio de tu broker."],
+  "Δ": ["Delta", "Cuánto se mueve la opción por cada $1 del subyacente. También ≈ probabilidad de expirar ITM. Call: 0→1, put: 0→−1."],
+  "Γ": ["Gamma", "Cuánto cambia la delta por cada $1 del subyacente. Máxima en el ATM y cerca del vencimiento — es el acelerador."],
+  "Θ": ["Theta", "Lo que pierde la opción por día solo por el paso del tiempo. Siempre juega contra el comprador."],
+  "V": ["Vega", "Cuánto gana/pierde por cada 1% de cambio en la IV. Clave en earnings y eventos."],
+  "ρ": ["Rho", "Sensibilidad a 1% de cambio en los tipos de interés. Casi irrelevante a corto plazo."],
+};
+
 const ChainView = {
   data: null,
 
@@ -62,11 +74,7 @@ const ChainView = {
                 <th class="chain-strike">STRIKE</th>
                 <th colspan="9" class="chain-side put">PUTS</th>
               </tr>
-              <tr>
-                <th>Vol</th><th>OI</th><th>IV</th><th>Prec</th><th>Δ</th><th>Γ</th><th>Θ</th><th>V</th><th>ρ</th>
-                <th class="chain-strike"></th>
-                <th>Δ</th><th>Γ</th><th>Θ</th><th>V</th><th>ρ</th><th>Prec</th><th>IV</th><th>OI</th><th>Vol</th>
-              </tr>
+              <tr id="chainCols"></tr>
             </thead>
             <tbody id="chainBody"><tr><td colspan="19" class="scan-empty">esperando datos…</td></tr></tbody>
           </table></div>
@@ -74,6 +82,28 @@ const ChainView = {
       </div>`;
     this.body = root.querySelector("#chainBody");
     this.meta = root.querySelector("#chainMeta");
+
+    // cabeceras con tooltip explicativo al pasar el cursor
+    const callCols = ["Vol", "OI", "IV", "Prec", "Δ", "Γ", "Θ", "V", "ρ"];
+    const putCols = ["Δ", "Γ", "Θ", "V", "ρ", "Prec", "IV", "OI", "Vol"];
+    root.querySelector("#chainCols").innerHTML =
+      callCols.map(c => `<th data-tip="${c}">${c}</th>`).join("") +
+      `<th class="chain-strike" data-tip="STRIKE"></th>` +
+      putCols.map(c => `<th data-tip="${c}">${c}</th>`).join("");
+    root.querySelectorAll("th[data-tip]").forEach(th => {
+      th.addEventListener("pointerenter", (e) => {
+        const tip = CHAIN_COL_TIPS[th.dataset.tip];
+        if (!tip) return;
+        showTooltip(`<div class="tt-title">${tip[0]}</div><div>${tip[1]}</div>`,
+                    e.clientX, e.clientY);
+      });
+      th.addEventListener("pointermove", (e) => {
+        const tip = CHAIN_COL_TIPS[th.dataset.tip];
+        if (tip) showTooltip(`<div class="tt-title">${tip[0]}</div><div>${tip[1]}</div>`,
+                             e.clientX, e.clientY);
+      });
+      th.addEventListener("pointerleave", hideTooltip);
+    });
   },
 
   unmount() {

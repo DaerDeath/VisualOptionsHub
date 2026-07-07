@@ -98,12 +98,21 @@ body {
 .navgroup-btn .caret { font-size: 0.6rem; opacity: 0.6; }
 .navgroup:hover .navgroup-btn { color: var(--text); background: var(--surface-2); border-color: var(--border); }
 .navgroup.active .navgroup-btn { color: var(--accent); border-color: var(--accent); background: var(--surface); }
+/* puente invisible sobre el hueco botón→menú: el hover no se pierde al cruzar */
+.navgroup::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: 10px;
+}
 .navgroup-menu {
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
   min-width: 200px;
-  display: none;
+  display: flex;
   flex-direction: column;
   background: rgba(13, 18, 26, 0.98);
   border: 1px solid var(--border);
@@ -111,8 +120,16 @@ body {
   padding: 5px;
   z-index: 25;
   box-shadow: 0 12px 34px rgba(0, 0, 0, 0.55);
+  visibility: hidden;
+  opacity: 0;
+  /* gracia de 150ms antes de cerrarse: perdona salidas breves del cursor */
+  transition: opacity 120ms ease, visibility 0s linear 150ms;
 }
-.navgroup:hover .navgroup-menu, .navgroup:focus-within .navgroup-menu { display: flex; }
+.navgroup:hover .navgroup-menu, .navgroup:focus-within .navgroup-menu {
+  visibility: visible;
+  opacity: 1;
+  transition-delay: 0s;
+}
 .navgroup-menu a {
   color: var(--text-dim);
   text-decoration: none;
