@@ -552,6 +552,99 @@ canvas { flex: 1; width: 100%; height: 100%; display: block; cursor: crosshair; 
   border-right: 1px solid var(--border);
 }
 .chain-itm { background: rgba(93, 179, 217, 0.05); }
+.art-coart::before {
+  content: "◈";
+  display: grid;
+  place-items: center;
+  height: 100%;
+  font-size: 1.7rem;
+  color: var(--accent);
+}
+
+/* ---------------------------------------------------------------- empresa */
+.co-wrap {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1.25fr 1fr 1fr;
+  grid-template-rows: minmax(0, 1.15fr) minmax(0, 1fr);
+  grid-template-areas:
+    "profile earnings analysts"
+    "profile news     check";
+  gap: 8px;
+  padding: 8px;
+  min-height: 0;
+}
+.co-profile { grid-area: profile; }
+.co-earnings { grid-area: earnings; }
+.co-analysts { grid-area: analysts; }
+.co-news { grid-area: news; }
+.co-check { grid-area: check; }
+.co-body { padding: 0.8rem; overflow-y: auto; flex: 1; min-height: 0; }
+.co-name b { font-size: 1.15rem; display: block; }
+.co-name span { font-size: 0.74rem; color: var(--text-dim); }
+.co-summary { font-size: 0.78rem; color: var(--text-dim); line-height: 1.6; margin: 0.6rem 0; }
+.co-tiles { margin: 0.6rem 0; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+.co-range {
+  position: relative;
+  height: 8px;
+  background: linear-gradient(90deg, var(--sold-dim), var(--border), var(--bought-dim));
+  border-radius: 4px;
+  margin: 0.45rem 0 0.25rem;
+}
+.co-range i {
+  position: absolute;
+  top: -3px;
+  width: 3px;
+  height: 14px;
+  background: var(--price-line);
+  border-radius: 2px;
+  transform: translateX(-50%);
+}
+.co-targets { background: var(--surface); border: 1px solid var(--border); }
+.co-targets .spot { background: var(--price-line); }
+.co-targets .tgt { background: var(--accent); }
+.co-ratings {
+  display: flex;
+  height: 26px;
+  border-radius: 6px;
+  overflow: hidden;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+}
+.co-ratings div {
+  display: grid;
+  place-items: center;
+  color: #10151d;
+  font-weight: 700;
+  min-width: 1.2em;
+}
+.co-sbar { height: 8px; border-radius: 3px; display: inline-block; }
+.co-sbar.pos { background: var(--bought); }
+.co-sbar.neg { background: var(--sold); }
+.co-newsitem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: 7px;
+  text-decoration: none;
+  border-left: 2px solid var(--border);
+  margin-bottom: 0.35rem;
+  transition: background 120ms, border-color 120ms;
+}
+.co-newsitem:hover { background: var(--surface-2); border-left-color: var(--accent); }
+.co-newstitle { color: var(--text); font-size: 0.8rem; line-height: 1.4; }
+.co-newsmeta { color: var(--text-dim); font-size: 0.66rem; font-family: var(--mono); }
+
+@media (max-width: 980px) {
+  .co-wrap {
+    grid-template-columns: 1fr;
+    grid-template-areas: "profile" "earnings" "analysts" "check" "news";
+    grid-template-rows: none;
+    overflow-y: auto;
+  }
+}
+
 .art-plus::before {
   content: "+";
   display: grid;

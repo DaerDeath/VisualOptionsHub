@@ -60,6 +60,12 @@ const GUIDE_SECTIONS = [
     <p>Bloques grandes de volumen clasificados contra el bid-ask: <b>VENTA</b> = cruzó al bid,
     <b>COMPRA</b> = al ask. Busca secuencias del mismo lado en el mismo strike (acumulación
     institucional) y prima gorda (filas resaltadas) cerca de niveles clave.</p>`],
+  ["Empresa", "company", `
+    <p>Ficha Bloomberg-like con datos gratis de Yahoo: <b>DES</b> (perfil, market cap, P/E,
+    beta, rango 52 semanas), <b>ERN</b> (próximo earnings con countdown y estimaciones, más el
+    historial de sorpresas EPS — clave para el checklist del Cap. 7), <b>ANR</b> (recomendaciones
+    apiladas y price targets con upside) y <b>N</b> (titulares). Abajo, los criterios del libro
+    que se pueden evaluar automáticamente con estos datos. Caché de 10 minutos.</p>`],
   ["Scanner", "scanner", `
     <p>Señales por símbolo: <b>Dirección</b> = put sell % − call sell % (positivo = presión alcista).
     <b>Régimen</b> = signo del GEX total. <b>Dist. flip</b> = colchón hasta el gamma flip (pequeño = peligro

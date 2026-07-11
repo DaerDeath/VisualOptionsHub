@@ -8,7 +8,7 @@ const VIEWS = {
   vol: VolView, oi: OIView, tape: TapeView,
   scanner: ScannerView, calc: CalcView,
   maxpain: MaxPainView, cvd: CvdView, tpo: TpoView, probs: ProbsView,
-  vwap: VwapView, pcr: PcrView, chain: ChainView,
+  vwap: VwapView, pcr: PcrView, chain: ChainView, company: CompanyView,
   stats: StatsView, notebooks: NotebooksView,
   alerts: AlertsView, journal: JournalView,
   guide: GuideView,
@@ -21,7 +21,8 @@ const VIEW_TITLES = {
   scanner: "scanner", calc: "calculadora",
   maxpain: "max pain", cvd: "delta acumulado", tpo: "perfil TPO",
   probs: "probabilidades", vwap: "vwap + sesión", pcr: "put/call ratio",
-  chain: "cadena + griegas", stats: "estadísticos", notebooks: "notebooks (original)",
+  chain: "cadena + griegas", company: "empresa",
+  stats: "estadísticos", notebooks: "notebooks (original)",
   alerts: "alertas", journal: "diario", guide: "guía",
 };
 
@@ -95,7 +96,7 @@ const NAV_GROUPS = [
   ["Mercado", ["flow", "dealer", "levels", "heatmap", "hiro", "oi", "tape"]],
   ["Precio", ["setup", "footprint", "vwap", "cvd", "tpo"]],
   ["Opciones", ["chain", "vol", "probs", "maxpain", "pcr", "calc"]],
-  ["Análisis", ["scanner", "stats", "notebooks"]],
+  ["Análisis", ["company", "scanner", "stats", "notebooks"]],
   ["Herramientas", ["alerts", "journal", "guide"]],
 ];
 const NAV_SHORT = {
@@ -104,7 +105,7 @@ const NAV_SHORT = {
   setup: "Setup FP+Wyckoff+VP", footprint: "Footprint", vwap: "VWAP", cvd: "CVD", tpo: "TPO",
   chain: "Cadena + griegas",
   vol: "Volatilidad", probs: "Probabilidades", maxpain: "Max Pain", pcr: "Put/Call", calc: "Calculadora",
-  scanner: "Scanner", stats: "Estadísticos", notebooks: "Notebooks",
+  company: "Empresa", scanner: "Scanner", stats: "Estadísticos", notebooks: "Notebooks",
   alerts: "Alertas", journal: "Diario", guide: "Guía",
 };
 

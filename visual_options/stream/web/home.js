@@ -61,6 +61,11 @@ const VIEW_CARDS = [
     art: "tape",
   },
   {
+    view: "company", name: "Empresa", ready: true,
+    desc: "Ficha Bloomberg-like: fundamentales, próximo earnings con historial de sorpresas EPS, analistas con price targets, noticias y el checklist del libro auto-evaluado.",
+    art: "coart",
+  },
+  {
     view: "scanner", name: "Scanner", ready: true,
     desc: "Señales direccionales y de volatilidad por símbolo: flujo, Σ GEX, régimen y distancia al flip.",
     art: "scanner",
