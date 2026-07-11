@@ -24,8 +24,9 @@ const CalcView = {
               <label>Spot <input id="calcSpot" type="number" step="0.01"></label>
               <label>IV <input id="calcIV" type="number" step="0.01" value="0.30"></label>
               <label>Días <input id="calcDays" type="number" step="1" value="30"></label>
-              <label class="calc-check"><input id="calcAuto" type="checkbox" checked> auto-precio BSM</label>
+              <label class="calc-check"><input id="calcAuto" type="checkbox" checked> auto-precio BSM (IV única)</label>
             </div>
+            <button id="calcChain" class="btn" title="rellena las primas con el precio BSM usando la IV propia de cada strike del feed activo">primas de la cadena</button>
             <button id="calcRun" class="btn btn-primary">Calcular</button>
             <div id="calcError" class="calc-error" hidden></div>
             <div id="calcMetrics" class="calc-metrics"></div>
@@ -62,6 +63,47 @@ const CalcView = {
     this.el.strategy.addEventListener("change", () => this.renderParams());
     this.el.auto.addEventListener("change", () => this.renderParams());
     this.el.run.addEventListener("click", () => this.calculate());
+    root.querySelector("#calcChain").addEventListener("click", () => this.fillFromChain());
+  },
+
+  /* rellena cada *_premium con BSM usando la IV del strike correspondiente */
+  fillFromChain() {
+    if (!this.data || !this.data.strikes.length) return;
+    if (this.el.auto.checked) {
+      this.el.auto.checked = false;
+      this.renderParams();  // muestra los campos de prima
+    }
+    const days = parseFloat(this.el.days.value) || this.data.expiry_days || 30;
+    const spot = parseFloat(this.el.spot.value) || this.data.spot;
+    const inputs = [...this.el.params.querySelectorAll("[data-param]")];
+    const valueOf = (name) => {
+      const field = inputs.find(i => i.dataset.param === name);
+      return field ? parseFloat(field.value) : NaN;
+    };
+    const kindField = inputs.find(i => i.dataset.param === "kind");
+    const strategyId = this.el.strategy.value;
+
+    inputs.forEach(input => {
+      const name = input.dataset.param;
+      const isPremium = name.endsWith("premium") || /^p\d+$/.test(name);
+      if (!isPremium) return;
+      // strike asociado: X_premium → X_strike; p1 → s1; iron fly → center_strike
+      let strikeName = /^p(\d+)$/.test(name) ? name.replace("p", "s")
+                                             : name.replace("premium", "strike");
+      let strike = valueOf(strikeName);
+      if (!isFinite(strike)) strike = valueOf("center_strike");
+      if (!isFinite(strike)) strike = valueOf("strike");
+      if (!isFinite(strike)) return;
+      // lado: por el nombre del parámetro, el campo kind o el id de la estrategia
+      const kind = name.includes("call") ? "call" : name.includes("put") ? "put"
+        : kindField ? kindField.value
+        : strategyId.includes("put") ? "put" : "call";
+      // IV del strike más cercano en la cadena
+      const row = this.data.strikes.reduce((best, r) =>
+        Math.abs(r.strike - strike) < Math.abs(best.strike - strike) ? r : best);
+      const greeks = ChainGreeks(spot, strike, days, row.iv || 0.2);
+      input.value = (kind === "call" ? greeks.call.price : greeks.put.price).toFixed(2);
+    });
   },
 
   unmount() {

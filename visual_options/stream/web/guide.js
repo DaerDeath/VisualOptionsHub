@@ -101,6 +101,17 @@ const GUIDE_SECTIONS = [
     <p>PCR por <b>volumen</b> (lo operado hoy: sentimiento inmediato) y por <b>OI</b> (posicionamiento).
     Lectura contraria en extremos: PCR volumen &gt;1.2 = pánico (suelo cerca), &lt;0.5 = euforia.
     El desglose por strike enseña dónde se concentra la desproporción.</p>`],
+  ["Estadísticos", "stats", `
+    <p>Batería de tests sobre los retornos reales del símbolo, cada uno con veredicto:
+    <b>Jarque-Bera</b> (¿normales? casi nunca — por eso el MC usa bootstrap), <b>Dickey-Fuller</b>
+    (¿estacionarios?), <b>Ljung-Box</b> (¿autocorrelación?), <b>efecto ARCH</b> (¿clustering de
+    volatilidad? justifica el GARCH) y <b>GARCH(1,1)</b> con su persistencia. El botón
+    <b>Monte Carlo</b> lanza 2.000 trayectorias con bootstrap de residuos → cono de percentiles,
+    prob. de subir y VaR 95%.</p>`],
+  ["Notebooks (original)", "notebooks", `
+    <p>El método de tus .ipynb tal cual, como referencia: ARIMA(1,0,1)+GARCH con UNA trayectoria
+    (seed 42) o la variante MeanZero con bandas ±1σ. <i>Informativo</i>: una sola ruta no es una
+    proyección — compárala con el Monte Carlo de Estadísticos para ver la diferencia.</p>`],
   ["Alertas", "alerts", `
     <p>Avisos locales del navegador: precio cruza un nivel, call/put sell % bajo un umbral
     o cruce del gamma flip. Suena un beep y sale notificación. Se revisan con cada tick

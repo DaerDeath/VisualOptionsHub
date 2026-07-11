@@ -208,7 +208,12 @@ def create_app(mode: str = "sim", *, seed: int | None = None, ib_host: str = "12
         """Señales por símbolo (Compass-like) desde las sesiones vivas."""
         resolved = resolve_source(source)
         results = []
-        for symbol in [s.strip().upper() for s in symbols.split(",") if s.strip()][:16]:
+        # yfinance castiga las ráfagas: menos símbolos y creación escalonada
+        max_symbols = 8 if resolved == "yfinance" else 16
+        wanted = [s.strip().upper() for s in symbols.split(",") if s.strip()][:max_symbols]
+        for symbol in wanted:
+            if resolved == "yfinance" and not manager.has(symbol, resolved):
+                await asyncio.sleep(0.6)
             session = await manager.session_for(symbol, resolved)
             state = session.feed.state
             snap = state.snapshot()

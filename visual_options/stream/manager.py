@@ -79,6 +79,9 @@ class SessionManager:
     def sources(self) -> list[str]:
         return list(self._factories)
 
+    def has(self, symbol: str, source: str) -> bool:
+        return f"{source}:{symbol.upper().strip()}" in self._sessions
+
     async def session_for(self, symbol: str, source: str | None = None) -> Session:
         symbol = symbol.upper().strip() or "QQQ"
         source = source or self.default_source

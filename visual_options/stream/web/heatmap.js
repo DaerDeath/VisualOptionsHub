@@ -13,12 +13,18 @@ const HeatmapView = {
         <section class="panel">
           <div class="panel-head">
             <h2>Heatmap GEX</h2>
-            <span class="hint">tiempo × strike · verde = gamma que frena · rojo = gamma que acelera · línea blanca = spot</span>
+            <span class="hint">tiempo × strike · verde frena · rojo acelera · blanca = spot · ${ZOOM_HINT}</span>
           </div>
           <canvas id="hmCanvas"></canvas>
         </section>
       </div>`;
     this.panel = new Panel(root.querySelector("#hmCanvas"), (c, w, h) => this.draw(c, w, h));
+    this.vp = new BarViewport(() => this.panel && this.panel.draw());
+    this.vp.attach(this.panel.canvas, {
+      total: () => (this.data ? this.data.gex_history.length : 0),
+      defaultCount: () => (this.data ? this.data.gex_history.length : 1),
+      plot: () => [this.PAD.l, this.panel.w - this.PAD.l - this.PAD.r],
+    });
     this.attachMouse();
   },
 
@@ -37,9 +43,13 @@ const HeatmapView = {
   PAD: { l: 8, r: 58, t: 10, b: 24 },
 
   geometry(w, h) {
-    const history = this.data.gex_history;
+    const all = this.data.gex_history;
     const strikes = this.data.strikes.map(r => r.strike); // ascendente
-    if (!history.length || !strikes.length) return null;
+    if (!all.length || !strikes.length) return null;
+    const range = this.vp ? this.vp.view(all.length, all.length)
+                          : { start: 0, end: all.length };
+    const history = all.slice(range.start, range.end);
+    if (!history.length) return null;
     const P = this.PAD;
     const colW = (w - P.l - P.r) / history.length;
     const rowH = (h - P.t - P.b) / strikes.length;
@@ -118,6 +128,7 @@ const HeatmapView = {
     const canvas = this.panel.canvas;
     canvas.addEventListener("pointermove", (e) => {
       if (!this.data) return;
+      if (this.vp && this.vp.dragging) { hideTooltip(); return; }
       const g = this.geometry(this.panel.w, this.panel.h);
       if (!g) return;
       const P = this.PAD;
