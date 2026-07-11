@@ -36,7 +36,35 @@ const app = {
   lastPrice: null,
   source: "sim",
   sourcesCatalog: [],
+  expiry: 0,
 };
+
+/* ----------------------------------------------- selector de vencimiento */
+async function loadExpirations() {
+  const select = el("expirySel");
+  try {
+    const list = await fetch(
+      `/api/expirations?symbol=${encodeURIComponent(app.symbol)}&source=${encodeURIComponent(app.source)}`
+    ).then(r => r.json());
+    if (app.expiry >= list.length) app.expiry = 0;
+    select.innerHTML = list.map(e =>
+      `<option value="${e.index}" ${e.index === app.expiry ? "selected" : ""}>${e.label}</option>`).join("");
+  } catch (_) {
+    select.innerHTML = `<option value="0">próximo</option>`;
+    app.expiry = 0;
+  }
+}
+
+function reconnectStream() {
+  if (!app.viewName) return;
+  if (app.client) app.client.close();
+  app.lastPrice = null;
+  app.client = new StreamClient(app.symbol, onData, app.source, app.expiry);
+  fetch(`/api/snapshot?symbol=${encodeURIComponent(app.symbol)}&source=${encodeURIComponent(app.source)}&expiry=${app.expiry}`)
+    .then(r => r.json())
+    .then(onData)
+    .catch(() => {});
+}
 
 /* ------------------------------------------------ selector de proveedor */
 async function initSources() {
@@ -73,14 +101,8 @@ function setSource(source) {
   const homeMode = document.getElementById("homeMode");
   if (homeMode) homeMode.textContent = sourceLabel();
   if (app.viewName) {
-    // reconecta la vista actual con el nuevo proveedor
-    if (app.client) { app.client.close(); }
-    app.lastPrice = null;
-    app.client = new StreamClient(app.symbol, onData, source);
-    fetch(`/api/snapshot?symbol=${encodeURIComponent(app.symbol)}&source=${encodeURIComponent(source)}`)
-      .then(r => r.json())
-      .then(onData)
-      .catch(() => {});
+    loadExpirations();  // el calendario puede diferir entre fuentes
+    reconnectStream();
   }
 }
 
@@ -159,19 +181,17 @@ function route() {
     return;
   }
 
+  const symbolChanged = app.symbol !== symbol;
   app.viewName = view;
   app.symbol = symbol;
   localStorage.setItem("vo-symbol", symbol);
   el("symbolInput").value = symbol;
   renderNav(view, symbol);
+  if (symbolChanged) loadExpirations();
 
   app.current = VIEWS[view];
   app.current.mount(root);
-  app.client = new StreamClient(symbol, onData, app.source);
-  fetch(`/api/snapshot?symbol=${encodeURIComponent(symbol)}&source=${encodeURIComponent(app.source)}`)
-    .then(r => r.json())
-    .then(onData)
-    .catch(() => {});
+  reconnectStream();
 }
 
 function onData(payload) {
@@ -203,6 +223,11 @@ function gotoSymbol(symbol) {
   if (symbol && app.viewName) location.hash = `#/${app.viewName}/${symbol}`;
 }
 attachSymbolPicker(el("symbolInput"), { onPick: gotoSymbol, onEnter: gotoSymbol });
+
+el("expirySel").addEventListener("change", (e) => {
+  app.expiry = parseInt(e.target.value, 10) || 0;
+  reconnectStream();
+});
 
 /* Pausa. */
 function togglePause() {

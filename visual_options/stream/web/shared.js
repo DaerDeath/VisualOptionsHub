@@ -125,9 +125,10 @@ const ZOOM_HINT = "rueda = zoom · arrastra = mover · doble clic = reset";
 
 /* Cliente WebSocket por símbolo + fuente de datos, con reconexión. */
 class StreamClient {
-  constructor(symbol, onData, source) {
+  constructor(symbol, onData, source, expiry) {
     this.symbol = symbol;
     this.source = source || "";
+    this.expiry = expiry || 0;
     this.onData = onData;
     this.closed = false;
     this.connect();
@@ -135,7 +136,7 @@ class StreamClient {
   connect() {
     if (this.closed) return;
     const src = this.source ? `&source=${encodeURIComponent(this.source)}` : "";
-    this.ws = new WebSocket(`ws://${location.host}/ws?symbol=${encodeURIComponent(this.symbol)}${src}`);
+    this.ws = new WebSocket(`ws://${location.host}/ws?symbol=${encodeURIComponent(this.symbol)}${src}&expiry=${this.expiry}`);
     this.ws.onmessage = (ev) => this.onData(JSON.parse(ev.data));
     this.ws.onclose = () => { if (!this.closed) setTimeout(() => this.connect(), 2000); };
   }

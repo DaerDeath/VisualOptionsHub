@@ -78,6 +78,18 @@ body {
 }
 .symbol-input:focus { outline: none; border-color: var(--accent); }
 
+.expiry-sel {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.3rem 0.4rem;
+  max-width: 118px;
+}
+.expiry-sel:focus { outline: none; border-color: var(--accent); }
+
 .viewnav { display: flex; gap: 0.25rem; }
 
 .navgroup { position: relative; }

@@ -26,9 +26,10 @@ class IBKRFeed:
     """Mantiene un DashboardState sincronizado con la cadena 0DTE de IBKR."""
 
     def __init__(self, symbol: str = "QQQ", host: str = "127.0.0.1", port: int = 7497,
-                 client_id: int = 21) -> None:
+                 client_id: int = 21, expiry_index: int = 0) -> None:
         self.footprint = FootprintBuilder()
         self._run_task: asyncio.Task | None = None
+        self.expiry_index = max(0, expiry_index)
         try:
             from ib_async import IB
         except ImportError as exc:
@@ -67,7 +68,8 @@ class IBKRFeed:
 
             chains = await ib.reqSecDefOptParamsAsync(stock.symbol, "", stock.secType, stock.conId)
             chain = next(c for c in chains if c.exchange == "SMART")
-            expiry = sorted(chain.expirations)[0]  # 0DTE / vencimiento más cercano
+            expirations = sorted(chain.expirations)
+            expiry = expirations[min(self.expiry_index, len(expirations) - 1)]
             expiry_dt = datetime.strptime(expiry, "%Y%m%d")
             self.state.expiry_days = max(0.25, (expiry_dt - datetime.now()).total_seconds() / 86400)
             base = round(self.state.spot)

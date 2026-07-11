@@ -40,8 +40,9 @@ def _num(value, default: float = 0.0) -> float:
 class YFinanceFeed:
     """Interfaz Feed (ver manager.py) sobre yfinance."""
 
-    def __init__(self, symbol: str, ticker_factory=None) -> None:
+    def __init__(self, symbol: str, ticker_factory=None, expiry_index: int = 0) -> None:
         self.symbol = symbol.upper()
+        self.expiry_index = max(0, expiry_index)
         self.state = DashboardState(symbol=self.symbol, spot=0.0,
                                     source="yfinance", connected=False)
         self.footprint = FootprintBuilder()
@@ -83,7 +84,7 @@ class YFinanceFeed:
             expirations = self._ticker.options
             if not expirations:
                 raise RuntimeError(f"{self.symbol} no tiene cadena de opciones en Yahoo")
-            self._expiration = expirations[0]
+            self._expiration = expirations[min(self.expiry_index, len(expirations) - 1)]
 
         self._refresh_chain()
         self._refresh_footprint()

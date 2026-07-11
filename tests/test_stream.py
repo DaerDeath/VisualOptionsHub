@@ -181,14 +181,33 @@ def test_sessions_are_keyed_by_source_and_symbol():
     from visual_options.stream.manager import SessionManager, SimFeed
 
     async def scenario():
-        manager = SessionManager({"sim": lambda s: SimFeed(s, seed=1),
-                                  "sim2": lambda s: SimFeed(s, seed=2)}, default_source="sim")
+        manager = SessionManager(
+            {"sim": lambda s, expiry=0: SimFeed(s, seed=1, expiry_index=expiry),
+             "sim2": lambda s, expiry=0: SimFeed(s, seed=2, expiry_index=expiry)},
+            default_source="sim")
         a = await manager.session_for("QQQ", "sim")
         b = await manager.session_for("QQQ", "sim2")
         c = await manager.session_for("QQQ", "sim")
         assert a is c and a is not b
+        # el vencimiento forma parte de la clave de sesión
+        d = await manager.session_for("QQQ", "sim", expiry=1)
+        assert d is not a
+        assert d.feed.state.expiry_days == 7.0
+        assert a.feed.state.expiry_days == 1.0
         with pytest.raises(KeyError):
             await manager.session_for("QQQ", "nope")
         await manager.shutdown()
 
     asyncio.run(scenario())
+
+
+def test_server_expirations_and_expiry_param():
+    app = create_app(mode="sim", seed=1)
+    with TestClient(app) as client:
+        exps = client.get("/api/expirations", params={"symbol": "QQQ", "source": "sim"}).json()
+        assert exps[0] == {"index": 0, "label": "~1d"}
+        assert len(exps) == 6
+
+        snap = client.get("/api/snapshot",
+                          params={"symbol": "QQQ", "source": "sim", "expiry": 3}).json()
+        assert snap["flow"]["expiry_days"] == 30.0

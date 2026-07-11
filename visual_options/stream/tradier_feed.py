@@ -37,7 +37,9 @@ class TradierFeed:
     """Interfaz Feed (ver manager.py) sobre la API REST de Tradier."""
 
     def __init__(self, symbol: str, token: str | None = None, env: str = "sandbox",
-                 transport: httpx.AsyncBaseTransport | None = None) -> None:
+                 transport: httpx.AsyncBaseTransport | None = None,
+                 expiry_index: int = 0) -> None:
+        self.expiry_index = max(0, expiry_index)
         token = token or os.environ.get("TRADIER_TOKEN", "")
         if not token:
             raise SystemExit("Falta el token de Tradier: exporta TRADIER_TOKEN o usa --tradier-token")
@@ -86,7 +88,10 @@ class TradierFeed:
         expirations = await self._get("/markets/options/expirations",
                                       symbol=self.symbol, includeAllRoots="true")
         dates = expirations["expirations"]["date"]
-        self._expiration = dates[0] if isinstance(dates, list) else dates
+        if isinstance(dates, list):
+            self._expiration = dates[min(self.expiry_index, len(dates) - 1)]
+        else:
+            self._expiration = dates
         self._initialized = True
 
     async def _refresh_chain(self) -> None:

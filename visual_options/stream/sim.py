@@ -51,8 +51,13 @@ def strike_step_for(spot: float) -> float:
 class SessionSimulator:
     """Evoluciona un DashboardState con ticks discretos."""
 
-    def __init__(self, symbol: str = "QQQ", spot: float | None = None, seed: int | None = None) -> None:
+    # días a expiración por índice de vencimiento elegido (0DTE, semanal, …)
+    EXPIRY_DAYS_BY_INDEX = (1.0, 7.0, 14.0, 30.0, 45.0, 60.0, 90.0, 120.0, 180.0)
+
+    def __init__(self, symbol: str = "QQQ", spot: float | None = None,
+                 seed: int | None = None, expiry_index: int = 0) -> None:
         self.rng = random.Random(seed)
+        self.expiry_index = max(0, min(expiry_index, len(self.EXPIRY_DAYS_BY_INDEX) - 1))
         spot = spot if spot is not None else base_price_for(symbol)
         self.spot0 = spot
         self.footprint = FootprintBuilder()
@@ -69,7 +74,7 @@ class SessionSimulator:
             strikes=[StrikeRow(strike=float(base + i * step))
                      for i in range(-STRIKE_SPAN, STRIKE_SPAN + 1)],
         )
-        self.state.expiry_days = 1.0  # cadena 0DTE
+        self.state.expiry_days = self.EXPIRY_DAYS_BY_INDEX[self.expiry_index]
         self._seed_magnet_profile()
         self._seed_open_interest()
         for _ in range(40):  # arranque con algo de historia

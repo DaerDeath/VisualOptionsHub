@@ -37,8 +37,8 @@ class Feed(Protocol):
 class SimFeed:
     """Adaptador del simulador a la interfaz Feed."""
 
-    def __init__(self, symbol: str, seed: int | None = None) -> None:
-        self.sim = SessionSimulator(symbol=symbol, seed=seed)
+    def __init__(self, symbol: str, seed: int | None = None, expiry_index: int = 0) -> None:
+        self.sim = SessionSimulator(symbol=symbol, seed=seed, expiry_index=expiry_index)
         self.state = self.sim.state
         self.footprint = self.sim.footprint
 
@@ -79,27 +79,30 @@ class SessionManager:
     def sources(self) -> list[str]:
         return list(self._factories)
 
-    def has(self, symbol: str, source: str) -> bool:
-        return f"{source}:{symbol.upper().strip()}" in self._sessions
+    def has(self, symbol: str, source: str, expiry: int = 0) -> bool:
+        return f"{source}:{symbol.upper().strip()}:{expiry}" in self._sessions
 
-    async def session_for(self, symbol: str, source: str | None = None) -> Session:
+    async def session_for(self, symbol: str, source: str | None = None,
+                          expiry: int = 0) -> Session:
         symbol = symbol.upper().strip() or "QQQ"
         source = source or self.default_source
+        expiry = max(0, min(int(expiry), 8))
         if source not in self._factories:
             raise KeyError(f"fuente desconocida: {source!r} (disponibles: {self.sources})")
-        key = f"{source}:{symbol}"
+        key = f"{source}:{symbol}:{expiry}"
         async with self._lock:
             session = self._sessions.get(key)
             if session is None:
-                session = Session(symbol=key, feed=self._factories[source](symbol))
+                session = Session(symbol=key, feed=self._factories[source](symbol, expiry))
                 # sin clientes desde el arranque: candidata a limpieza
                 session.idle_since = asyncio.get_event_loop().time()
                 session.task = asyncio.create_task(self._run(session))
                 self._sessions[key] = session
             return session
 
-    async def subscribe(self, symbol: str, ws: WebSocket, source: str | None = None) -> Session:
-        session = await self.session_for(symbol, source)
+    async def subscribe(self, symbol: str, ws: WebSocket, source: str | None = None,
+                        expiry: int = 0) -> Session:
+        session = await self.session_for(symbol, source, expiry)
         session.clients.add(ws)
         session.idle_since = None
         return session

@@ -43,13 +43,14 @@ def build_sources(*, seed: int | None = None, ib_host: str = "127.0.0.1", ib_por
     token = tradier_token or os.environ.get("TRADIER_TOKEN", "")
     has_ib = importlib.util.find_spec("ib_async") is not None
 
-    factories: dict[str, object] = {"sim": lambda symbol: SimFeed(symbol, seed=seed)}
+    factories: dict[str, object] = {
+        "sim": lambda symbol, expiry=0: SimFeed(symbol, seed=seed, expiry_index=expiry)}
     catalog: list[dict] = [
         {"id": "sim", "label": SOURCE_LABELS["sim"], "available": True, "reason": ""}]
 
     if importlib.util.find_spec("yfinance") is not None:
         from visual_options.stream.yfinance_feed import YFinanceFeed
-        factories["yfinance"] = lambda symbol: YFinanceFeed(symbol)
+        factories["yfinance"] = lambda symbol, expiry=0: YFinanceFeed(symbol, expiry_index=expiry)
         catalog.append({"id": "yfinance", "label": SOURCE_LABELS["yfinance"], "available": True,
                         "reason": "datos reales de Yahoo Finance (~15 min de retraso, sin token)"})
     else:
@@ -59,8 +60,8 @@ def build_sources(*, seed: int | None = None, ib_host: str = "127.0.0.1", ib_por
     for source, env in (("tradier", "prod"), ("tradier-delayed", "sandbox")):
         if token:
             from visual_options.stream.tradier_feed import TradierFeed
-            factories[source] = (lambda environment: lambda symbol: TradierFeed(
-                symbol, token=token, env=environment))(env)
+            factories[source] = (lambda environment: lambda symbol, expiry=0: TradierFeed(
+                symbol, token=token, env=environment, expiry_index=expiry))(env)
             catalog.append({"id": source, "label": SOURCE_LABELS[source],
                             "available": True, "reason": ""})
         else:
@@ -69,7 +70,8 @@ def build_sources(*, seed: int | None = None, ib_host: str = "127.0.0.1", ib_por
 
     if has_ib:
         from visual_options.stream.ibkr_feed import IBKRFeed
-        factories["ibkr"] = lambda symbol: IBKRFeed(symbol, host=ib_host, port=ib_port)
+        factories["ibkr"] = lambda symbol, expiry=0: IBKRFeed(
+            symbol, host=ib_host, port=ib_port, expiry_index=expiry)
         catalog.append({"id": "ibkr", "label": SOURCE_LABELS["ibkr"], "available": True,
                         "reason": "requiere TWS/IB Gateway corriendo"})
     else:
@@ -116,12 +118,35 @@ def create_app(mode: str = "sim", *, seed: int | None = None, ib_host: str = "12
         return {"default": manager.default_source, "sources": catalog}
 
     @app.get("/api/snapshot")
-    async def snapshot(symbol: str = "QQQ", source: str | None = None) -> dict:
-        session = await manager.session_for(symbol, resolve_source(source))
+    async def snapshot(symbol: str = "QQQ", source: str | None = None,
+                       expiry: int = 0) -> dict:
+        session = await manager.session_for(symbol, resolve_source(source), expiry)
         return {
             "flow": session.feed.state.snapshot(),
             "footprint": session.feed.footprint.snapshot(),
         }
+
+    @app.get("/api/expirations")
+    async def expirations(symbol: str = "QQQ", source: str | None = None) -> list[dict]:
+        """Vencimientos elegibles para el dropdown. Con fuentes reales usa el
+        calendario de Yahoo (coincide con el de OCC); en sim, etiquetas fijas."""
+        resolved = resolve_source(source)
+        if resolved == "sim":
+            from visual_options.stream.sim import SessionSimulator
+            return [{"index": i, "label": f"~{int(d)}d"}
+                    for i, d in enumerate(SessionSimulator.EXPIRY_DAYS_BY_INDEX[:6])]
+        import asyncio as _asyncio
+
+        def fetch() -> list[dict]:
+            import yfinance as yf
+            ticker = yf.Ticker(f"^{symbol.upper()}" if symbol.upper() in ("SPX", "VIX", "NDX", "RUT")
+                               else symbol.upper())
+            return [{"index": i, "label": date} for i, date in enumerate(ticker.options[:9])]
+
+        try:
+            return await _asyncio.to_thread(fetch)
+        except Exception:
+            return [{"index": i, "label": f"vencimiento #{i + 1}"} for i in range(4)]
 
     @app.get("/api/calculator/strategies")
     async def calculator_strategies() -> list[dict]:
@@ -238,12 +263,12 @@ def create_app(mode: str = "sim", *, seed: int | None = None, ib_host: str = "12
 
     @app.websocket("/ws")
     async def websocket_endpoint(ws: WebSocket, symbol: str = "QQQ",
-                                 source: str | None = None) -> None:
+                                 source: str | None = None, expiry: int = 0) -> None:
         if (source or manager.default_source) not in factories:
             await ws.close(code=4400, reason="fuente no disponible")
             return
         await ws.accept()
-        session = await manager.subscribe(symbol, ws, source)
+        session = await manager.subscribe(symbol, ws, source, expiry)
         try:
             await ws.send_text(session.payload())
             while True:
