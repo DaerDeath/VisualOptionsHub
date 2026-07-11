@@ -57,6 +57,7 @@ async function loadExpirations() {
 
 function reconnectStream() {
   if (!app.viewName) return;
+  if (typeof replay !== "undefined" && replay.active) return;  // en replay no hay directo
   if (app.client) app.client.close();
   app.lastPrice = null;
   app.client = new StreamClient(app.symbol, onData, app.source, app.expiry);
@@ -155,6 +156,7 @@ function parseHash() {
 
 function route() {
   const { view, symbol } = parseHash();
+  if (typeof replay !== "undefined" && replay.active) closeReplay(false);
   app.current.unmount();
   if (app.client) { app.client.close(); app.client = null; }
   app.paused = false;
@@ -169,6 +171,7 @@ function route() {
   el("aggBox").hidden = !inView;
   el("viewNav").hidden = !inView;
   el("pauseBtn").hidden = !inView;
+  el("replayBtn").hidden = !inView;
   el("viewTitle").textContent = inView ? VIEW_TITLES[view] : "terminal";
 
   if (!inView) {
@@ -227,6 +230,79 @@ attachSymbolPicker(el("symbolInput"), { onPick: gotoSymbol, onEnter: gotoSymbol 
 el("expirySel").addEventListener("change", (e) => {
   app.expiry = parseInt(e.target.value, 10) || 0;
   reconnectStream();
+});
+
+/* ------------------------------------------------------ replay de sesión */
+const replay = { active: false, sessions: [], current: null, total: 0, timer: null };
+
+async function openReplay() {
+  const bar = el("replayBar");
+  replay.sessions = await fetch(`/api/replay/days?symbol=${encodeURIComponent(app.symbol)}`)
+    .then(r => r.json()).catch(() => []);
+  const select = el("rpSession");
+  if (!replay.sessions.length) {
+    select.innerHTML = `<option>sin sesiones grabadas de ${app.symbol}</option>`;
+    bar.hidden = false;
+    return;
+  }
+  select.innerHTML = replay.sessions.map((s, i) =>
+    `<option value="${i}">${s.day} · ${s.source} · exp${s.expiry} · ${s.count} snaps (${s.from}–${s.to})</option>`).join("");
+  bar.hidden = false;
+  replay.active = true;
+  if (app.client) { app.client.close(); app.client = null; }
+  await selectReplaySession(0);
+}
+
+async function selectReplaySession(index) {
+  replay.current = replay.sessions[index];
+  stopReplayTimer();
+  await loadReplayIndex(0);
+}
+
+async function loadReplayIndex(index) {
+  const s = replay.current;
+  if (!s) return;
+  const query = `symbol=${encodeURIComponent(app.symbol)}&day=${s.day}&source=${s.source}&expiry=${s.expiry}&i=${index}`;
+  try {
+    const data = await fetch(`/api/replay?${query}`).then(r => r.json());
+    replay.total = data.total;
+    const slider = el("rpSlider");
+    slider.max = data.total - 1;
+    slider.value = data.index;
+    el("rpTs").textContent = data.ts;
+    onData(data.payload);
+    if (data.index >= data.total - 1) stopReplayTimer();
+  } catch (_) { stopReplayTimer(); }
+}
+
+function stopReplayTimer() {
+  clearInterval(replay.timer);
+  replay.timer = null;
+  el("rpPlay").textContent = "▶";
+}
+
+function closeReplay(reconnect = true) {
+  stopReplayTimer();
+  replay.active = false;
+  el("replayBar").hidden = true;
+  if (reconnect) reconnectStream();
+}
+
+el("replayBtn").addEventListener("click", () => {
+  replay.active ? closeReplay() : openReplay();
+});
+el("rpClose").addEventListener("click", () => closeReplay());
+el("rpSession").addEventListener("change", (e) => selectReplaySession(Number(e.target.value)));
+el("rpSlider").addEventListener("input", (e) => loadReplayIndex(Number(e.target.value)));
+el("rpPlay").addEventListener("click", () => {
+  if (replay.timer) { stopReplayTimer(); return; }
+  el("rpPlay").textContent = "⏸";
+  const step = () => {
+    const next = Number(el("rpSlider").value) + 1;
+    if (next >= replay.total) { stopReplayTimer(); return; }
+    loadReplayIndex(next);
+  };
+  replay.timer = setInterval(step, 1000 / Number(el("rpSpeed").value));
 });
 
 /* Pausa. */

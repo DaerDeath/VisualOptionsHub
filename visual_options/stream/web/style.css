@@ -225,6 +225,27 @@ body {
 .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .btn.active { color: var(--accent); border-color: var(--accent); }
 
+/* ------------------------------------------------------------ replay bar */
+.replay-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.45rem 1.1rem;
+  background: linear-gradient(180deg, rgba(198, 93, 217, 0.10), var(--surface));
+  border-bottom: 1px solid #c65dd9;
+}
+.replay-tag {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: #c65dd9;
+}
+.replay-bar input[type="range"] {
+  flex: 1;
+  accent-color: #c65dd9;
+}
+
 /* ---------------------------------------------------------------- rejilla */
 #view { flex: 1; display: flex; min-height: 0; }
 #view > * { flex: 1; min-height: 0; }

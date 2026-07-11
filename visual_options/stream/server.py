@@ -83,7 +83,7 @@ def build_sources(*, seed: int | None = None, ib_host: str = "127.0.0.1", ib_por
 
 def create_app(mode: str = "sim", *, seed: int | None = None, ib_host: str = "127.0.0.1",
                ib_port: int = 7497, tradier_token: str | None = None,
-               tradier_env: str = "sandbox") -> FastAPI:
+               tradier_env: str = "sandbox", db_path: str | None = None) -> FastAPI:
     if mode == "tradier" and tradier_env == "sandbox":
         mode = "tradier-delayed"
     factories, catalog = build_sources(seed=seed, ib_host=ib_host, ib_port=ib_port,
@@ -93,12 +93,15 @@ def create_app(mode: str = "sim", *, seed: int | None = None, ib_host: str = "12
     if mode not in factories:
         reason = next(s["reason"] for s in catalog if s["id"] == mode)
         raise SystemExit(f"la fuente por defecto {mode!r} no está disponible: {reason}")
-    manager = SessionManager(factories, default_source=mode)
+    from visual_options.stream.persistence import Recorder
+    recorder = Recorder(db_path)
+    manager = SessionManager(factories, default_source=mode, recorder=recorder)
 
     @contextlib.asynccontextmanager
     async def lifespan(app: FastAPI):
         yield
         await manager.shutdown()
+        recorder.close()
 
     app = FastAPI(title="visual-options stream", lifespan=lifespan)
     app.state.manager = manager
@@ -125,6 +128,18 @@ def create_app(mode: str = "sim", *, seed: int | None = None, ib_host: str = "12
             "flow": session.feed.state.snapshot(),
             "footprint": session.feed.footprint.snapshot(),
         }
+
+    @app.get("/api/replay/days")
+    async def replay_days(symbol: str = "QQQ") -> list[dict]:
+        return recorder.days(symbol)
+
+    @app.get("/api/replay")
+    async def replay_get(symbol: str, day: str, source: str = "sim",
+                         expiry: int = 0, i: int = 0) -> dict:
+        snapshot = recorder.get(symbol, day, source, expiry, i)
+        if snapshot is None:
+            raise HTTPException(status_code=404, detail="sesión no grabada")
+        return snapshot
 
     @app.get("/api/expirations")
     async def expirations(symbol: str = "QQQ", source: str | None = None) -> list[dict]:
@@ -270,7 +285,9 @@ def create_app(mode: str = "sim", *, seed: int | None = None, ib_host: str = "12
         await ws.accept()
         session = await manager.subscribe(symbol, ws, source, expiry)
         try:
-            await ws.send_text(session.payload())
+            initial = session.payload()
+            recorder.record(session.symbol, initial)  # garantiza ≥1 snapshot
+            await ws.send_text(initial)
             while True:
                 await ws.receive_text()  # mantiene viva la conexión
         except WebSocketDisconnect:

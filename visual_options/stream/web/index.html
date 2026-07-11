@@ -27,9 +27,22 @@
     <div class="srcnav" id="srcNav" title="proveedor de datos"></div>
     <span id="clock" class="clock"></span>
     <span id="status" class="status" title="estado de la conexión"></span>
+    <button id="replayBtn" class="btn" hidden title="replay de sesiones grabadas">⏪</button>
     <button id="pauseBtn" class="btn" hidden title="pausar / reanudar (espacio)">⏸</button>
   </div>
 </header>
+
+<div id="replayBar" class="replay-bar" hidden>
+  <span class="replay-tag">REPLAY</span>
+  <select id="rpSession" class="expiry-sel" style="max-width:260px"></select>
+  <button id="rpPlay" class="btn">▶</button>
+  <input id="rpSlider" type="range" min="0" max="0" value="0">
+  <span id="rpTs" class="clock">--:--:--</span>
+  <select id="rpSpeed" class="expiry-sel">
+    <option value="1">1×</option><option value="4" selected>4×</option><option value="10">10×</option>
+  </select>
+  <button id="rpClose" class="btn" title="volver al directo">✕ directo</button>
+</div>
 
 <main id="view"></main>
 
