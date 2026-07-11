@@ -18,7 +18,8 @@
 TRADIER_TOKEN=xxxx uv run voptions stream --mode tradier
 ```
 
-**IBKR (opcional):** requiere Interactive Brokers y TWS/IB Gateway con API en puerto 7497:
+**IBKR (opcional):** requiere Interactive Brokers y TWS/IB Gateway con la API activada.
+Puerto por defecto: 7496 (TWS cuenta real); usa `--port 7497` para paper:
 ```bash
 uv sync --extra ibkr
 uv run voptions stream --mode ibkr

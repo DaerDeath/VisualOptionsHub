@@ -25,7 +25,7 @@ REFRESH_SECONDS = 5.0
 class IBKRFeed:
     """Mantiene un DashboardState sincronizado con la cadena 0DTE de IBKR."""
 
-    def __init__(self, symbol: str = "QQQ", host: str = "127.0.0.1", port: int = 7497,
+    def __init__(self, symbol: str = "QQQ", host: str = "127.0.0.1", port: int = 7496,
                  client_id: int = 21, expiry_index: int = 0) -> None:
         self.footprint = FootprintBuilder()
         self._run_task: asyncio.Task | None = None

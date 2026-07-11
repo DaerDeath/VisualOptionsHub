@@ -37,7 +37,7 @@ SOURCE_LABELS = {
 }
 
 
-def build_sources(*, seed: int | None = None, ib_host: str = "127.0.0.1", ib_port: int = 7497,
+def build_sources(*, seed: int | None = None, ib_host: str = "127.0.0.1", ib_port: int = 7496,
                   tradier_token: str | None = None) -> tuple[dict, list[dict]]:
     """Devuelve (factories disponibles, catálogo para /api/config)."""
     token = tradier_token or os.environ.get("TRADIER_TOKEN", "")
@@ -82,7 +82,7 @@ def build_sources(*, seed: int | None = None, ib_host: str = "127.0.0.1", ib_por
 
 
 def create_app(mode: str = "sim", *, seed: int | None = None, ib_host: str = "127.0.0.1",
-               ib_port: int = 7497, tradier_token: str | None = None,
+               ib_port: int = 7496, tradier_token: str | None = None,
                tradier_env: str = "sandbox", db_path: str | None = None) -> FastAPI:
     if mode == "tradier" and tradier_env == "sandbox":
         mode = "tradier-delayed"

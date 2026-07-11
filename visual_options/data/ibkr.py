@@ -18,7 +18,7 @@ def _require_ib():
         ) from exc
 
 
-def fetch_chain_summary(symbol: str, host: str = "127.0.0.1", port: int = 7497,
+def fetch_chain_summary(symbol: str, host: str = "127.0.0.1", port: int = 7496,
                         client_id: int = 17, expiries: int = 2, strikes_around: int = 6) -> None:
     """Imprime un resumen de la cadena: strikes ATM ± N para los próximos vencimientos."""
     IB, Stock, Option = _require_ib()

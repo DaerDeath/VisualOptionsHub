@@ -203,7 +203,7 @@ def main(argv: list[str] | None = None) -> None:
     p_ch = sub.add_parser("chain", help="cadena de opciones desde IBKR (pip install .[ibkr])")
     p_ch.add_argument("symbol")
     p_ch.add_argument("--host", default="127.0.0.1")
-    p_ch.add_argument("--port", type=int, default=7497, help="7497 paper TWS, 7496 real, 4001/4002 Gateway")
+    p_ch.add_argument("--port", type=int, default=7496, help="7496 real TWS (por defecto), 7497 paper, 4001/4002 Gateway")
     p_ch.add_argument("--expiries", type=int, default=2, help="número de vencimientos a mostrar")
     p_ch.set_defaults(func=cmd_chain)
 
@@ -212,7 +212,8 @@ def main(argv: list[str] | None = None) -> None:
                       help="fuente POR DEFECTO (todas quedan disponibles y se cambian desde la web)")
     p_st.add_argument("--web-port", type=int, default=8000)
     p_st.add_argument("--host", default="127.0.0.1", help="host de TWS/Gateway (modo ibkr)")
-    p_st.add_argument("--port", type=int, default=7497, help="puerto de TWS/Gateway (modo ibkr)")
+    p_st.add_argument("--port", type=int, default=7496,
+                      help="puerto de TWS/Gateway: 7496 real (por defecto), 7497 paper")
     p_st.add_argument("--seed", type=int, help="semilla del simulador (reproducible)")
     p_st.add_argument("--tradier-token", help="token de Tradier (por defecto: env TRADIER_TOKEN)")
     p_st.add_argument("--tradier-env", choices=["sandbox", "prod"], default="sandbox",
