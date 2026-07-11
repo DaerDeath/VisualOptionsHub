@@ -9,7 +9,7 @@ const VIEWS = {
   scanner: ScannerView, calc: CalcView,
   maxpain: MaxPainView, cvd: CvdView, tpo: TpoView, probs: ProbsView,
   vwap: VwapView, pcr: PcrView, chain: ChainView, company: CompanyView,
-  stats: StatsView, notebooks: NotebooksView,
+  stats: StatsView, backtest: BacktestView, notebooks: NotebooksView,
   alerts: AlertsView, journal: JournalView,
   guide: GuideView,
 };
@@ -22,7 +22,7 @@ const VIEW_TITLES = {
   maxpain: "max pain", cvd: "delta acumulado", tpo: "perfil TPO",
   probs: "probabilidades", vwap: "vwap + sesión", pcr: "put/call ratio",
   chain: "cadena + griegas", company: "empresa",
-  stats: "estadísticos", notebooks: "notebooks (original)",
+  stats: "estadísticos", backtest: "backtest", notebooks: "notebooks (original)",
   alerts: "alertas", journal: "diario", guide: "guía",
 };
 
@@ -37,6 +37,8 @@ const app = {
   source: "sim",
   sourcesCatalog: [],
   expiry: 0,
+  split: null,       // id de la vista secundaria en pantalla dividida
+  sideView: null,    // objeto de la vista secundaria montada
 };
 
 /* ----------------------------------------------- selector de vencimiento */
@@ -119,7 +121,7 @@ const NAV_GROUPS = [
   ["Mercado", ["flow", "dealer", "levels", "heatmap", "hiro", "oi", "tape"]],
   ["Precio", ["setup", "footprint", "vwap", "cvd", "tpo"]],
   ["Opciones", ["chain", "vol", "probs", "maxpain", "pcr", "calc"]],
-  ["Análisis", ["company", "scanner", "stats", "notebooks"]],
+  ["Análisis", ["company", "scanner", "stats", "backtest", "notebooks"]],
   ["Herramientas", ["alerts", "journal", "guide"]],
 ];
 const NAV_SHORT = {
@@ -128,7 +130,8 @@ const NAV_SHORT = {
   setup: "Setup FP+Wyckoff+VP", footprint: "Footprint", vwap: "VWAP", cvd: "CVD", tpo: "TPO",
   chain: "Cadena + griegas",
   vol: "Volatilidad", probs: "Probabilidades", maxpain: "Max Pain", pcr: "Put/Call", calc: "Calculadora",
-  company: "Empresa", scanner: "Scanner", stats: "Estadísticos", notebooks: "Notebooks",
+  company: "Empresa", scanner: "Scanner", stats: "Estadísticos",
+  backtest: "Backtest", notebooks: "Notebooks",
   alerts: "Alertas", journal: "Diario", guide: "Guía",
 };
 
@@ -158,6 +161,7 @@ function route() {
   const { view, symbol } = parseHash();
   if (typeof replay !== "undefined" && replay.active) closeReplay(false);
   app.current.unmount();
+  if (app.sideView) { app.sideView.unmount(); app.sideView = null; }
   if (app.client) { app.client.close(); app.client = null; }
   app.paused = false;
   app.pending = null;
@@ -172,6 +176,8 @@ function route() {
   el("viewNav").hidden = !inView;
   el("pauseBtn").hidden = !inView;
   el("replayBtn").hidden = !inView;
+  el("shotBtn").hidden = !inView;
+  el("splitSel").hidden = !inView;
   el("viewTitle").textContent = inView ? VIEW_TITLES[view] : "terminal";
 
   if (!inView) {
@@ -192,16 +198,31 @@ function route() {
   renderNav(view, symbol);
   if (symbolChanged) loadExpirations();
 
+  // pantalla dividida: opciones del selector (todas menos la vista actual)
+  const splitSel = el("splitSel");
+  if (app.split === view) app.split = null;
+  splitSel.innerHTML = `<option value="">— dividir —</option>` +
+    Object.keys(VIEWS).filter(v => v !== view)
+      .map(v => `<option value="${v}" ${v === app.split ? "selected" : ""}>◫ ${NAV_SHORT[v]}</option>`).join("");
+
   app.current = VIEWS[view];
-  app.current.mount(root);
+  root.classList.toggle("split", !!app.split);
+  if (app.split) {
+    root.innerHTML = `<div class="split-pane" id="viewMain"></div><div class="split-pane" id="viewSide"></div>`;
+    app.current.mount(root.querySelector("#viewMain"));
+    app.sideView = VIEWS[app.split];
+    app.sideView.mount(root.querySelector("#viewSide"));
+  } else {
+    app.current.mount(root);
+  }
   reconnectStream();
 }
 
 function onData(payload) {
   if (app.paused) { app.pending = payload; return; }
   updateHeader(payload.flow);
-  AlertsEngine.check(payload.flow);
   app.current.onData(payload);
+  if (app.sideView) app.sideView.onData(payload);
 }
 
 function updateHeader(flow) {
@@ -230,6 +251,11 @@ attachSymbolPicker(el("symbolInput"), { onPick: gotoSymbol, onEnter: gotoSymbol 
 el("expirySel").addEventListener("change", (e) => {
   app.expiry = parseInt(e.target.value, 10) || 0;
   reconnectStream();
+});
+
+el("splitSel").addEventListener("change", (e) => {
+  app.split = e.target.value || null;
+  route();  // remonta con/sin panel secundario
 });
 
 /* ------------------------------------------------------ replay de sesión */
@@ -287,6 +313,35 @@ function closeReplay(reconnect = true) {
   el("replayBar").hidden = true;
   if (reconnect) reconnectStream();
 }
+
+/* ------------------------------------------------- exportar vista a PNG */
+el("shotBtn").addEventListener("click", () => {
+  const canvases = [...document.querySelectorAll("#view canvas")]
+    .filter(c => c.width > 0 && c.height > 0);
+  if (!canvases.length) return;
+  const gap = 14, header = 34;
+  const width = Math.max(...canvases.map(c => c.width));
+  const height = header + canvases.reduce((acc, c) => acc + c.height + gap, 0);
+  const out = document.createElement("canvas");
+  out.width = width;
+  out.height = height;
+  const ctx = out.getContext("2d");
+  ctx.fillStyle = css("--bg") || "#0a0d12";
+  ctx.fillRect(0, 0, width, height);
+  ctx.fillStyle = css("--accent");
+  ctx.font = "700 18px " + css("--mono");
+  const stamp = new Date().toISOString().slice(0, 16).replace("T", " ");
+  ctx.fillText(`${app.symbol} · ${VIEW_TITLES[app.viewName] || app.viewName} · ${stamp} · visual-options`, 12, 24);
+  let y = header;
+  canvases.forEach(c => {
+    ctx.drawImage(c, 0, y);
+    y += c.height + gap;
+  });
+  const link = document.createElement("a");
+  link.download = `${app.symbol}_${app.viewName}_${stamp.replace(/[: ]/g, "-")}.png`;
+  link.href = out.toDataURL("image/png");
+  link.click();
+});
 
 el("replayBtn").addEventListener("click", () => {
   replay.active ? closeReplay() : openReplay();

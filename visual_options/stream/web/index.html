@@ -24,9 +24,11 @@
   </div>
   <nav class="viewnav" id="viewNav" hidden></nav>
   <div class="session">
+    <select id="splitSel" class="expiry-sel" hidden title="pantalla dividida: segunda vista"></select>
     <div class="srcnav" id="srcNav" title="proveedor de datos"></div>
     <span id="clock" class="clock"></span>
     <span id="status" class="status" title="estado de la conexión"></span>
+    <button id="shotBtn" class="btn" hidden title="exportar la vista como PNG">📷</button>
     <button id="replayBtn" class="btn" hidden title="replay de sesiones grabadas">⏪</button>
     <button id="pauseBtn" class="btn" hidden title="pausar / reanudar (espacio)">⏸</button>
   </div>
@@ -72,6 +74,7 @@
 <script src="/static/company.js"></script>
 <script src="/static/stats.js"></script>
 <script src="/static/notebooks.js"></script>
+<script src="/static/backtest.js"></script>
 <script src="/static/alerts.js"></script>
 <script src="/static/journal.js"></script>
 <script src="/static/guide.js"></script>

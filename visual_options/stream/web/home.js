@@ -111,6 +111,11 @@ const VIEW_CARDS = [
     art: "statsart",
   },
   {
+    view: "backtest", name: "Backtest de rangos", ready: true,
+    desc: "¿Cómo habría ido vender strangles ±X% cada semana? Win rate, drawdown y equity con históricos reales.",
+    art: "btart",
+  },
+  {
     view: "notebooks", name: "Notebooks (original)", ready: true,
     desc: "Tu gráfico histórico + proyección ARIMA+GARCH tal cual los .ipynb, sin cambios — informativo.",
     art: "nbart",

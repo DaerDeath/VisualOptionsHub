@@ -20,7 +20,7 @@ const SetupView = {
         <section class="panel setup-chart">
           <div class="panel-head">
             <h2>Wyckoff + Volume Profile</h2>
-            <span class="hint">SPRING/UT en área de valor · SOS/SOW rupturas · ABS = absorción · POC ámbar · ${ZOOM_HINT}</span>
+            <span class="hint">SC/BC clímax · AR reacción · ST retest · SPRING/UT · SOS/SOW · ABS absorción · POC ámbar · ${ZOOM_HINT}</span>
           </div>
           <canvas id="setupChart"></canvas>
         </section>
@@ -100,11 +100,78 @@ const SetupView = {
 
   /* ---------------------------------------------------- eventos wyckoff */
 
+  /* Clímax y estructura: SC/BC (rango y volumen extremos con cierre en el
+   * extremo y nuevo mínimo/máximo), AR (reacción automática: el swing
+   * opuesto en las 6 barras siguientes), ST (retest del clímax con menos
+   * volumen). Devuelve mapa índice→evento; pisa a las señales por barra. */
+  structuralEvents(bars, quantile) {
+    const events = {};
+    const ranges = bars.map(b => b.high - b.low);
+    const volumes = bars.map(b => b.volume);
+    const rangeP85 = quantile(ranges, 0.85);
+    const volP85 = quantile(volumes, 0.85);
+    let runLow = Infinity, runHigh = -Infinity;
+    let sc = null, bc = null;
+    bars.forEach((bar, i) => {
+      const range = Math.max(bar.high - bar.low, 1e-9);
+      const pos = (bar.close - bar.low) / range;
+      if (sc === null && range >= rangeP85 && bar.volume >= volP85 &&
+          pos < 0.35 && bar.low <= runLow) {
+        sc = i;
+      }
+      if (bc === null && range >= rangeP85 && bar.volume >= volP85 &&
+          pos > 0.65 && bar.high >= runHigh) {
+        bc = i;
+      }
+      runLow = Math.min(runLow, bar.low);
+      runHigh = Math.max(runHigh, bar.high);
+    });
+
+    const chain = (climaxIdx, isSelling) => {
+      const climax = bars[climaxIdx];
+      events[climaxIdx] = {
+        tag: isSelling ? "SC" : "BC", side: isSelling ? "below" : "above",
+        color: COLORS.accent,
+        note: isSelling ? "selling climax: pánico con rango y volumen extremos — posible suelo"
+                        : "buying climax: euforia con rango y volumen extremos — posible techo",
+      };
+      // AR: el swing opuesto en las 6 barras siguientes
+      let ar = null, best = isSelling ? -Infinity : Infinity;
+      for (let j = climaxIdx + 1; j < Math.min(bars.length, climaxIdx + 7); j++) {
+        const v = isSelling ? bars[j].high : bars[j].low;
+        if (isSelling ? v > best : v < best) { best = v; ar = j; }
+      }
+      if (ar === null || ar === climaxIdx) return;
+      events[ar] = events[ar] || {
+        tag: "AR", side: isSelling ? "above" : "below", color: COLORS.call,
+        note: "automatic rally/reaction: el rebote que define el rango de trading",
+      };
+      // ST: retest del clímax con menos volumen, pasado el AR
+      const span = Math.abs(best - (isSelling ? climax.low : climax.high));
+      for (let j = ar + 1; j < bars.length; j++) {
+        const near = isSelling
+          ? bars[j].low <= climax.low + span * 0.25
+          : bars[j].high >= climax.high - span * 0.25;
+        if (near && bars[j].volume < climax.volume) {
+          events[j] = events[j] || {
+            tag: "ST", side: isSelling ? "below" : "above", color: COLORS.dim,
+            note: "secondary test: retest del clímax con menos volumen — confirma el extremo",
+          };
+          break;
+        }
+      }
+    };
+    if (sc !== null) chain(sc, true);
+    if (bc !== null) chain(bc, false);
+    return events;
+  },
+
   wyckoffEvents(bars, vp) {
     const quantile = (values, q) => {
       const sorted = [...values].sort((a, b) => a - b);
       return sorted[Math.min(sorted.length - 1, Math.floor(q * sorted.length))];
     };
+    const structural = this.structuralEvents(bars, quantile);
     const ranges = bars.map(b => b.high - b.low);
     const volumes = bars.map(b => b.volume);
     const wideRange = quantile(ranges, 0.6);
@@ -112,6 +179,7 @@ const SetupView = {
     const narrowRange = quantile(ranges, 0.3);
 
     return bars.map((bar, i) => {
+      if (structural[i]) return structural[i];
       if (i === 0) return null;
       // spring / upthrust contra el área de valor
       if (bar.low < vp.val && bar.close > vp.val) {

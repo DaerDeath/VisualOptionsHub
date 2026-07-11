@@ -67,14 +67,15 @@ class Session:
 
 class SessionManager:
     def __init__(self, factories: dict[str, object], default_source: str = "sim",
-                 recorder=None) -> None:
-        """factories: id de fuente → (symbol, expiry) -> Feed. recorder opcional
-        (persistence.Recorder) para grabar los snapshots difundidos."""
+                 recorder=None, alert_engine=None) -> None:
+        """factories: id de fuente → (symbol, expiry) -> Feed. recorder y
+        alert_engine opcionales, enganchados a cada difusión."""
         if default_source not in factories:
             raise ValueError(f"fuente por defecto desconocida: {default_source!r}")
         self._factories = factories
         self.default_source = default_source
         self.recorder = recorder
+        self.alert_engine = alert_engine
         self._sessions: dict[str, Session] = {}
         self._lock = asyncio.Lock()
 
@@ -139,6 +140,11 @@ class SessionManager:
                 self.recorder.record(session.symbol, message)
             except Exception:
                 pass  # grabar nunca debe tumbar el directo
+        if self.alert_engine is not None:
+            try:
+                self.alert_engine.check_state(session.feed.state)
+            except Exception:
+                pass
         dead = set()
         for ws in session.clients:
             try:

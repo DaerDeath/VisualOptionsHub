@@ -93,15 +93,19 @@ def create_app(mode: str = "sim", *, seed: int | None = None, ib_host: str = "12
     if mode not in factories:
         reason = next(s["reason"] for s in catalog if s["id"] == mode)
         raise SystemExit(f"la fuente por defecto {mode!r} no está disponible: {reason}")
+    from visual_options.stream.alerts_engine import AlertEngine
     from visual_options.stream.persistence import Recorder
     recorder = Recorder(db_path)
-    manager = SessionManager(factories, default_source=mode, recorder=recorder)
+    alert_engine = AlertEngine(db_path)
+    manager = SessionManager(factories, default_source=mode, recorder=recorder,
+                             alert_engine=alert_engine)
 
     @contextlib.asynccontextmanager
     async def lifespan(app: FastAPI):
         yield
         await manager.shutdown()
         recorder.close()
+        alert_engine.close()
 
     app = FastAPI(title="visual-options stream", lifespan=lifespan)
     app.state.manager = manager
@@ -128,6 +132,43 @@ def create_app(mode: str = "sim", *, seed: int | None = None, ib_host: str = "12
             "flow": session.feed.state.snapshot(),
             "footprint": session.feed.footprint.snapshot(),
         }
+
+    @app.get("/api/backtest")
+    async def backtest_endpoint(symbol: str = "QQQ", otm_pct: float = 3.0,
+                                dte: int = 5, years: int = 2) -> dict:
+        import asyncio as _asyncio
+
+        from visual_options.stream import backtest as bt
+        try:
+            return await _asyncio.to_thread(bt.run_backtest, symbol.upper(),
+                                            otm_pct, dte, years)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"descarga falló: {exc}")
+
+    @app.get("/api/alerts")
+    async def alerts_list() -> dict:
+        return {"active": alert_engine.active(), "log": alert_engine.log(),
+                "desktop": alert_engine.notify_cmd is not None}
+
+    @app.post("/api/alerts")
+    async def alerts_create(body: dict) -> dict:
+        try:
+            return alert_engine.create(body.get("symbol", "QQQ"), body.get("type", ""),
+                                       body.get("value"))
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+
+    @app.delete("/api/alerts/{alert_id}")
+    async def alerts_delete(alert_id: int) -> dict:
+        alert_engine.delete(alert_id)
+        return {"ok": True}
+
+    @app.delete("/api/alerts/log")
+    async def alerts_clear_log() -> dict:
+        alert_engine.clear_log()
+        return {"ok": True}
 
     @app.get("/api/replay/days")
     async def replay_days(symbol: str = "QQQ") -> list[dict]:
