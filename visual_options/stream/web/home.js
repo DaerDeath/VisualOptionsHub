@@ -51,6 +51,16 @@ const VIEW_CARDS = [
     art: "vol",
   },
   {
+    view: "termstructure", name: "Estructura de plazos", ready: true,
+    desc: "IV ATM por vencimiento (TRMS): contango o backwardation en la curva de volatilidad.",
+    art: "tsart",
+  },
+  {
+    view: "volcone", name: "Cono de volatilidad", ready: true,
+    desc: "Rango histórico de la vol realizada por ventana (VC): ¿la IV de hoy está cara o barata?",
+    art: "vcart",
+  },
+  {
     view: "oi", name: "Perfil de OI", ready: true,
     desc: "Open interest de calls y puts en espejo por strike con put/call ratio.",
     art: "oi",
@@ -64,6 +74,11 @@ const VIEW_CARDS = [
     view: "company", name: "Empresa", ready: true,
     desc: "Ficha Bloomberg-like: fundamentales, próximo earnings con historial de sorpresas EPS, analistas con price targets, noticias y el checklist del libro auto-evaluado.",
     art: "coart",
+  },
+  {
+    view: "correlation", name: "Correlación", ready: true,
+    desc: "Sensibilidad de los retornos frente a índices y sectores (CORR): de qué depende realmente el papel.",
+    art: "crart",
   },
   {
     view: "scanner", name: "Scanner", ready: true,

@@ -38,6 +38,23 @@ def _profile(info: dict) -> dict:
     }
 
 
+def _short_interest(info: dict) -> dict:
+    """SIA — interés en corto: % del float, ratio (días para cubrir) y tendencia."""
+    shares_short = _num(info.get("sharesShort"))
+    prior = _num(info.get("sharesShortPriorMonth"))
+    pct_float = _num(info.get("shortPercentOfFloat"))
+    trend_pct = None
+    if shares_short is not None and prior:
+        trend_pct = round((shares_short - prior) / prior * 100, 1)
+    return {
+        "shares_short": shares_short,
+        "pct_float": round(pct_float * 100, 2) if pct_float is not None else None,
+        "days_to_cover": _num(info.get("shortRatio")),
+        "prior_month": prior,
+        "trend_pct": trend_pct,
+    }
+
+
 def _metrics(info: dict) -> dict:
     price = _num(info.get("currentPrice")) or _num(info.get("regularMarketPrice"))
     low52 = _num(info.get("fiftyTwoWeekLow"))
@@ -231,6 +248,7 @@ def company_snapshot(symbol: str) -> dict:
         "metrics": metrics,
         "earnings": earnings,
         "analysts": analysts,
+        "short_interest": _short_interest(info),
         "news": _news(ticker),
         "book_checklist": _book_checklist(analysts, earnings, metrics),
         "as_of": datetime.now(timezone.utc).strftime("%H:%M UTC"),

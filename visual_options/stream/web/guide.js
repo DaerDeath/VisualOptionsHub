@@ -42,6 +42,20 @@ const GUIDE_SECTIONS = [
     <p>Índice acumulado del flujo: sube cuando se venden puts / compran calls con agresión.
     <b>Divergencias</b>: si el precio hace máximos y el índice no (o al revés), el movimiento
     pierde gasolina. El área verde/roja indica presión neta acumulada de la sesión.</p>`],
+  ["Estructura de plazos", "termstructure", `
+    <p><b>TRMS</b> del libro: la IV ATM de cada vencimiento en una curva. <b>Contango</b> (sube con
+    el plazo) es lo normal — el corto plazo es más barato porque hay menos incertidumbre acumulada.
+    <b>Backwardation</b> (el corto plazo más caro que el largo) señala estrés inminente: earnings,
+    una decisión de la Fed, o pánico ya en marcha.</p>`],
+  ["Cono de volatilidad", "volcone", `
+    <p><b>VC</b> del libro: en vez de comparar IV contra HV de hoy, compara la <b>vol realizada actual</b>
+    contra su propio rango histórico (2 años) por ventana de tiempo. El percentil te dice si el
+    régimen de volatilidad está caro (alto) o barato (bajo) en contexto — más fiable que mirar
+    un solo número suelto.</p>`],
+  ["Correlación", "correlation", `
+    <p><b>CORR</b> del libro (aquí, contra una cesta de índices/sectores en vez de peers individuales):
+    cuánto se mueve el papel en línea con SPY, QQQ, sectores, oro, bonos… Útil para saber si estás
+    realmente apostando por la empresa o solo por el mercado general, y para elegir el mejor hedge.</p>`],
   ["Cadena + griegas", "chain", `
     <p>La cadena completa del vencimiento con precio teórico BSM y las griegas por contrato:
     <b>Δ</b> (sensibilidad al precio; también ≈ prob. de expirar ITM), <b>Γ</b> (cómo cambia la delta),
@@ -64,8 +78,9 @@ const GUIDE_SECTIONS = [
     <p>Ficha Bloomberg-like con datos gratis de Yahoo: <b>DES</b> (perfil, market cap, P/E,
     beta, rango 52 semanas), <b>ERN</b> (próximo earnings con countdown y estimaciones, más el
     historial de sorpresas EPS — clave para el checklist del Cap. 7), <b>ANR</b> (recomendaciones
-    apiladas y price targets con upside) y <b>N</b> (titulares). Abajo, los criterios del libro
-    que se pueden evaluar automáticamente con estos datos. Caché de 10 minutos.</p>`],
+    apiladas y price targets con upside), <b>SIA</b> (interés en corto: % del float, días para
+    cubrir y tendencia — alto + giro alcista = mecha de short squeeze) y <b>N</b> (titulares).
+    Abajo, los criterios del libro evaluados automáticamente. Caché de 10 minutos.</p>`],
   ["Scanner", "scanner", `
     <p>Señales por símbolo: <b>Dirección</b> = put sell % − call sell % (positivo = presión alcista).
     <b>Régimen</b> = signo del GEX total. <b>Dist. flip</b> = colchón hasta el gamma flip (pequeño = peligro
@@ -112,6 +127,12 @@ const GUIDE_SECTIONS = [
     <p>El método de tus .ipynb tal cual, como referencia: ARIMA(1,0,1)+GARCH con UNA trayectoria
     (seed 42) o la variante MeanZero con bandas ±1σ. <i>Informativo</i>: una sola ruta no es una
     proyección — compárala con el Monte Carlo de Estadísticos para ver la diferencia.</p>`],
+  ["Lo que no está (y por qué)", "chain", `
+    <p>Del apéndice del libro, tres pantallas se quedan fuera porque no hay fuente gratuita fiable:
+    <b>WGT</b> (peso de una acción en cada índice — requiere datos de proveedores de índices, de pago),
+    <b>ECO</b> (calendario macro con consenso de economistas) y <b>CEPR</b> (directorio de exchanges,
+    sin utilidad práctica aquí). El resto del apéndice (32 pantallas) está cubierto por alguna vista
+    de la app, aunque no lleve el mismo nombre de 4 letras — mira las tarjetas de arriba.</p>`],
   ["Alertas", "alerts", `
     <p>Avisos locales del navegador: precio cruza un nivel, call/put sell % bajo un umbral
     o cruce del gamma flip. Suena un beep y sale notificación. Se revisan con cada tick

@@ -20,6 +20,8 @@ class FakeTicker:
             "trailingPE": 25.0, "forwardPE": 20.0, "trailingEps": 4.0,
             "dividendYield": 0.5, "shortRatio": 2.5, "averageVolume": 2_000_000,
             "fiftyTwoWeekLow": 60.0, "fiftyTwoWeekHigh": 140.0,
+            "sharesShort": 1_200_000, "sharesShortPriorMonth": 1_000_000,
+            "shortPercentOfFloat": 0.045,
         }
         now = datetime.now(timezone.utc)
         self.earnings_dates = pd.DataFrame(
@@ -73,6 +75,12 @@ def test_company_snapshot_full(fake_yf):
 
     assert snap["news"][0]["publisher"] == "FakeWire"
     assert snap["news"][0]["url"] == "https://example.com/n1"
+
+    si = snap["short_interest"]
+    assert si["shares_short"] == 1_200_000
+    assert si["pct_float"] == pytest.approx(4.5)
+    assert si["days_to_cover"] == pytest.approx(2.5)
+    assert si["trend_pct"] == pytest.approx(20.0)  # +200k sobre 1.0M previo
 
 
 def test_book_checklist_verdicts(fake_yf):

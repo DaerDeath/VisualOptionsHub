@@ -122,9 +122,12 @@ const ChainView = {
     const rows = [...d.strikes].sort((a, b) => b.strike - a.strike);
     const stepHalf = rows.length > 1 ? Math.abs(rows[0].strike - rows[1].strike) / 2 : 0.5;
 
+    // NOVM: forward sintético por coste de acarreo F = S·e^(rT) (r=4%, sin dividendo)
+    const forward = d.spot * Math.exp(0.04 * Math.max(d.expiry_days, 0) / 365);
     this.meta.innerHTML =
       `<span class="dtotal">spot ${d.spot.toFixed(2)}</span>` +
       `<span class="dtotal">${d.expiry_days.toFixed(1)}d a vencimiento</span>` +
+      `<span class="dtotal" title="forward sintético por coste de acarreo, r=4%, sin dividendo">fwd ${forward.toFixed(2)}</span>` +
       `<span class="dtotal">r 4%</span>`;
 
     const f = (v, dec) => v.toFixed(dec);

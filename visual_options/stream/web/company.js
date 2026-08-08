@@ -23,6 +23,10 @@ const CompanyView = {
           <div class="panel-head"><h2>Noticias</h2><span class="hint">N · titulares recientes</span></div>
           <div class="co-body" id="coNews"></div>
         </section>
+        <section class="panel co-short">
+          <div class="panel-head"><h2>Interés en corto</h2><span class="hint">SIA</span></div>
+          <div class="co-body" id="coShort"></div>
+        </section>
         <section class="panel co-check">
           <div class="panel-head"><h2>Checklist del libro</h2>
             <span class="hint">criterios del Cap. 2/7 evaluados con estos datos</span></div>
@@ -33,6 +37,7 @@ const CompanyView = {
       meta: root.querySelector("#coMeta"), profile: root.querySelector("#coProfile"),
       earnings: root.querySelector("#coEarnings"), analysts: root.querySelector("#coAnalysts"),
       news: root.querySelector("#coNews"), check: root.querySelector("#coCheck"),
+      short: root.querySelector("#coShort"),
     };
     this.load();
   },
@@ -165,6 +170,26 @@ const CompanyView = {
           <span class="co-newsmeta">${[n.publisher, n.when].filter(Boolean).join(" · ")}</span>
         </a>`).join("")
       : `<div class="scan-empty">sin titulares</div>`;
+
+    // --- interés en corto SIA
+    const si = d.short_interest;
+    if (si.shares_short) {
+      const trend = si.trend_pct;
+      this.el.short.innerHTML = `
+        <div class="vwap-tiles">
+          ${tile("% del float", si.pct_float != null ? si.pct_float.toFixed(2) + "%" : "—",
+                 si.pct_float != null && si.pct_float > 20 ? "neg" : "")}
+          ${tile("Días para cubrir", si.days_to_cover != null ? si.days_to_cover.toFixed(1) + "d" : "—")}
+          ${tile("Acciones en corto", fmtK(si.shares_short))}
+          ${tile("Tendencia mensual", trend != null ? (trend >= 0 ? "+" : "") + trend + "%" : "—",
+                 trend == null ? "" : trend > 0 ? "neg" : "pos")}
+        </div>
+        <p class="co-summary">${si.pct_float != null && si.pct_float > 20
+          ? "Interés en corto alto: candidato a short squeeze si el precio gira al alza con fuerza."
+          : "Interés en corto dentro de rangos normales."}</p>`;
+    } else {
+      this.el.short.innerHTML = `<div class="scan-empty">sin datos de interés en corto (¿ETF/índice?)</div>`;
+    }
 
     // --- checklist del libro
     this.el.check.innerHTML = d.book_checklist.map(c => `

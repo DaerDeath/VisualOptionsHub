@@ -9,6 +9,7 @@ const VIEWS = {
   scanner: ScannerView, calc: CalcView,
   maxpain: MaxPainView, cvd: CvdView, tpo: TpoView, probs: ProbsView,
   vwap: VwapView, pcr: PcrView, chain: ChainView, company: CompanyView,
+  termstructure: TermStructureView, volcone: VolConeView, correlation: CorrelationView,
   stats: StatsView, backtest: BacktestView, notebooks: NotebooksView,
   alerts: AlertsView, journal: JournalView,
   guide: GuideView,
@@ -22,6 +23,7 @@ const VIEW_TITLES = {
   maxpain: "max pain", cvd: "delta acumulado", tpo: "perfil TPO",
   probs: "probabilidades", vwap: "vwap + sesión", pcr: "put/call ratio",
   chain: "cadena + griegas", company: "empresa",
+  termstructure: "estructura de plazos", volcone: "cono de volatilidad", correlation: "correlación",
   stats: "estadísticos", backtest: "backtest", notebooks: "notebooks (original)",
   alerts: "alertas", journal: "diario", guide: "guía",
 };
@@ -120,8 +122,8 @@ const el = (id) => document.getElementById(id);
 const NAV_GROUPS = [
   ["Mercado", ["flow", "dealer", "levels", "heatmap", "hiro", "oi", "tape"]],
   ["Precio", ["setup", "footprint", "vwap", "cvd", "tpo"]],
-  ["Opciones", ["chain", "vol", "probs", "maxpain", "pcr", "calc"]],
-  ["Análisis", ["company", "scanner", "stats", "backtest", "notebooks"]],
+  ["Opciones", ["chain", "vol", "termstructure", "volcone", "probs", "maxpain", "pcr", "calc"]],
+  ["Análisis", ["company", "correlation", "scanner", "stats", "backtest", "notebooks"]],
   ["Herramientas", ["alerts", "journal", "guide"]],
 ];
 const NAV_SHORT = {
@@ -129,8 +131,9 @@ const NAV_SHORT = {
   hiro: "HIRO", oi: "Perfil OI", tape: "Tape",
   setup: "Setup FP+Wyckoff+VP", footprint: "Footprint", vwap: "VWAP", cvd: "CVD", tpo: "TPO",
   chain: "Cadena + griegas",
-  vol: "Volatilidad", probs: "Probabilidades", maxpain: "Max Pain", pcr: "Put/Call", calc: "Calculadora",
-  company: "Empresa", scanner: "Scanner", stats: "Estadísticos",
+  vol: "Volatilidad", termstructure: "Estructura de plazos", volcone: "Cono de volatilidad",
+  probs: "Probabilidades", maxpain: "Max Pain", pcr: "Put/Call", calc: "Calculadora",
+  company: "Empresa", correlation: "Correlación", scanner: "Scanner", stats: "Estadísticos",
   backtest: "Backtest", notebooks: "Notebooks",
   alerts: "Alertas", journal: "Diario", guide: "Guía",
 };

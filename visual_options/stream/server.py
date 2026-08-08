@@ -271,6 +271,45 @@ def create_app(mode: str = "sim", *, seed: int | None = None, ib_host: str = "12
         except Exception as exc:
             raise HTTPException(status_code=502, detail=f"descarga de ficha falló: {exc}")
 
+    @app.get("/api/term-structure")
+    async def term_structure_endpoint(symbol: str = "QQQ") -> dict:
+        import asyncio as _asyncio
+
+        from visual_options.stream import structure
+        try:
+            return await _asyncio.to_thread(structure.term_structure, symbol)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"descarga falló: {exc}")
+
+    @app.get("/api/vol-cone")
+    async def vol_cone_endpoint(symbol: str = "QQQ", years: int = 2) -> dict:
+        import asyncio as _asyncio
+
+        from visual_options.stream import structure
+        try:
+            return await _asyncio.to_thread(structure.vol_cone, symbol, years)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"descarga falló: {exc}")
+
+    @app.get("/api/correlation")
+    async def correlation_endpoint(symbol: str = "QQQ", peers: str | None = None,
+                                   days: int = 90) -> dict:
+        import asyncio as _asyncio
+
+        from visual_options.stream import structure
+        peer_tuple = tuple(p.strip().upper() for p in peers.split(",") if p.strip()) \
+            if peers else structure.DEFAULT_PEERS
+        try:
+            return await _asyncio.to_thread(structure.correlation, symbol, peer_tuple, days)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"descarga falló: {exc}")
+
     @app.get("/api/notebooks")
     async def notebooks_endpoint(symbol: str = "ES=F", variant: str = "daily") -> dict:
         import asyncio as _asyncio
