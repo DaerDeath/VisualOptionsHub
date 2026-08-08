@@ -359,6 +359,19 @@ def create_app(mode: str = "sim", *, seed: int | None = None, ib_host: str = "12
         except Exception as exc:
             raise HTTPException(status_code=502, detail=f"no se pudo calcular el stress test: {exc}")
 
+    @app.get("/api/screener")
+    async def screener_endpoint(symbols: str = "", min_days: int = 25, max_days: int = 45,
+                                min_return: float = 0.12, min_sigma: float = 1.0,
+                                sides: str = "put,call") -> dict:
+        from visual_options.stream import screener as sc
+        symbol_tuple = tuple(s.strip().upper() for s in symbols.split(",") if s.strip()) or sc.DEFAULT_SYMBOLS
+        side_tuple = tuple(s.strip() for s in sides.split(",") if s.strip() in ("put", "call")) or ("put", "call")
+        try:
+            return await sc.scan(symbol_tuple, min_days=min_days, max_days=max_days,
+                                 min_return=min_return, min_sigma=min_sigma, sides=side_tuple)
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"el screener falló: {exc}")
+
     @app.get("/api/forward")
     async def forward_endpoint(symbol: str = "QQQ", days: int | None = None,
                                rate: float | None = None) -> dict:

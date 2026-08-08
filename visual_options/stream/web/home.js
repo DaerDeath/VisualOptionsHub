@@ -91,6 +91,11 @@ const VIEW_CARDS = [
     art: "scanner",
   },
   {
+    view: "screener", name: "Screener de verticales", ready: true,
+    desc: "Combina calculadora + regla del Cap. 2 en una lista de símbolos: encuentra bull put / bear call con strike a ≥1σ y rendimiento ≥12-15%.",
+    art: "scrart",
+  },
+  {
     view: "calc", name: "Calculadora", ready: true,
     desc: "Las 23 estrategias del libro con P/L, breakevens, prob. de beneficio y griegas.",
     art: "calc",

@@ -12,7 +12,7 @@ const VIEWS = {
   termstructure: TermStructureView, volcone: VolConeView, correlation: CorrelationView,
   forward: ForwardView,
   stats: StatsView, backtest: BacktestView, notebooks: NotebooksView, portfolio: PortfolioView,
-  grading: GradingView, stress: StressView,
+  grading: GradingView, stress: StressView, screener: ScreenerView,
   alerts: AlertsView, journal: JournalView,
   guide: GuideView,
 };
@@ -28,7 +28,7 @@ const VIEW_TITLES = {
   termstructure: "estructura de plazos", volcone: "cono de volatilidad", correlation: "correlación",
   forward: "forward y cost of carry",
   stats: "estadísticos", backtest: "backtest", notebooks: "notebooks (original)", portfolio: "portafolio",
-  grading: "grading (checklist A-F)", stress: "stress test",
+  grading: "grading (checklist A-F)", stress: "stress test", screener: "screener de verticales",
   alerts: "alertas", journal: "diario", guide: "guía",
 };
 
@@ -127,7 +127,7 @@ const NAV_GROUPS = [
   ["Mercado", ["flow", "dealer", "levels", "heatmap", "hiro", "oi", "tape"]],
   ["Precio", ["setup", "footprint", "vwap", "cvd", "tpo"]],
   ["Opciones", ["chain", "vol", "termstructure", "volcone", "forward", "probs", "maxpain", "pcr", "calc"]],
-  ["Análisis", ["company", "correlation", "scanner", "stats", "backtest", "notebooks"]],
+  ["Análisis", ["company", "correlation", "scanner", "screener", "stats", "backtest", "notebooks"]],
   ["Cuenta", ["portfolio", "stress"]],
   ["Herramientas", ["grading", "alerts", "journal", "guide"]],
 ];
@@ -138,7 +138,8 @@ const NAV_SHORT = {
   chain: "Cadena + griegas",
   vol: "Volatilidad", termstructure: "Estructura de plazos", volcone: "Cono de volatilidad",
   forward: "Forward & Carry", probs: "Probabilidades", maxpain: "Max Pain", pcr: "Put/Call", calc: "Calculadora",
-  company: "Empresa", correlation: "Correlación", scanner: "Scanner", stats: "Estadísticos",
+  company: "Empresa", correlation: "Correlación", scanner: "Scanner", screener: "Screener de verticales",
+  stats: "Estadísticos",
   backtest: "Backtest", notebooks: "Notebooks", portfolio: "Portafolio", stress: "Stress Test",
   grading: "Grading", alerts: "Alertas", journal: "Diario", guide: "Guía",
 };
