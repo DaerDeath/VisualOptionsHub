@@ -56,6 +56,14 @@ const GUIDE_SECTIONS = [
     <p><b>CORR</b> del libro (aquí, contra una cesta de índices/sectores en vez de peers individuales):
     cuánto se mueve el papel en línea con SPY, QQQ, sectores, oro, bonos… Útil para saber si estás
     realmente apostando por la empresa o solo por el mercado general, y para elegir el mejor hedge.</p>`],
+  ["Forward & Cost of Carry", "forward", `
+    <p><b>NOVM</b> del libro (Cap. 2), el ejemplo de IBM reproducido con tus propios símbolos:
+    <b>Cost of Carry</b> = interés que ganarías teniendo el capital en el activo libre de riesgo
+    menos los dividendos que te pierdes hasta el vencimiento. <b>Forward Price</b> = Spot + Cost
+    of Carry. Es interés <i>simple</i> (no capitalización continua) — así lo calcula el libro.
+    Si el forward queda por debajo del spot, los puts ATM valen más que los calls (dividendos
+    ganan la partida); si queda por encima, ganan los calls (interés gana la partida). Tasa por
+    defecto: T-bill a 13 semanas real de Yahoo, editable.</p>`],
   ["Cadena + griegas", "chain", `
     <p>La cadena completa del vencimiento con precio teórico BSM y las griegas por contrato:
     <b>Δ</b> (sensibilidad al precio; también ≈ prob. de expirar ITM), <b>Γ</b> (cómo cambia la delta),

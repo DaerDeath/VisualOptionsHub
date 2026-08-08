@@ -10,6 +10,7 @@ const VIEWS = {
   maxpain: MaxPainView, cvd: CvdView, tpo: TpoView, probs: ProbsView,
   vwap: VwapView, pcr: PcrView, chain: ChainView, company: CompanyView,
   termstructure: TermStructureView, volcone: VolConeView, correlation: CorrelationView,
+  forward: ForwardView,
   stats: StatsView, backtest: BacktestView, notebooks: NotebooksView,
   alerts: AlertsView, journal: JournalView,
   guide: GuideView,
@@ -24,6 +25,7 @@ const VIEW_TITLES = {
   probs: "probabilidades", vwap: "vwap + sesión", pcr: "put/call ratio",
   chain: "cadena + griegas", company: "empresa",
   termstructure: "estructura de plazos", volcone: "cono de volatilidad", correlation: "correlación",
+  forward: "forward y cost of carry",
   stats: "estadísticos", backtest: "backtest", notebooks: "notebooks (original)",
   alerts: "alertas", journal: "diario", guide: "guía",
 };
@@ -122,7 +124,7 @@ const el = (id) => document.getElementById(id);
 const NAV_GROUPS = [
   ["Mercado", ["flow", "dealer", "levels", "heatmap", "hiro", "oi", "tape"]],
   ["Precio", ["setup", "footprint", "vwap", "cvd", "tpo"]],
-  ["Opciones", ["chain", "vol", "termstructure", "volcone", "probs", "maxpain", "pcr", "calc"]],
+  ["Opciones", ["chain", "vol", "termstructure", "volcone", "forward", "probs", "maxpain", "pcr", "calc"]],
   ["Análisis", ["company", "correlation", "scanner", "stats", "backtest", "notebooks"]],
   ["Herramientas", ["alerts", "journal", "guide"]],
 ];
@@ -132,7 +134,7 @@ const NAV_SHORT = {
   setup: "Setup FP+Wyckoff+VP", footprint: "Footprint", vwap: "VWAP", cvd: "CVD", tpo: "TPO",
   chain: "Cadena + griegas",
   vol: "Volatilidad", termstructure: "Estructura de plazos", volcone: "Cono de volatilidad",
-  probs: "Probabilidades", maxpain: "Max Pain", pcr: "Put/Call", calc: "Calculadora",
+  forward: "Forward & Carry", probs: "Probabilidades", maxpain: "Max Pain", pcr: "Put/Call", calc: "Calculadora",
   company: "Empresa", correlation: "Correlación", scanner: "Scanner", stats: "Estadísticos",
   backtest: "Backtest", notebooks: "Notebooks",
   alerts: "Alertas", journal: "Diario", guide: "Guía",

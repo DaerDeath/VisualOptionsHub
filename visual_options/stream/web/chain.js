@@ -127,7 +127,7 @@ const ChainView = {
     this.meta.innerHTML =
       `<span class="dtotal">spot ${d.spot.toFixed(2)}</span>` +
       `<span class="dtotal">${d.expiry_days.toFixed(1)}d a vencimiento</span>` +
-      `<span class="dtotal" title="forward sintético por coste de acarreo, r=4%, sin dividendo">fwd ${forward.toFixed(2)}</span>` +
+      `<span class="dtotal" title="forward sintético aproximado, r=4%, sin dividendo — cálculo completo en Forward &amp; Cost of Carry">fwd ${forward.toFixed(2)}</span>` +
       `<span class="dtotal">r 4%</span>`;
 
     const f = (v, dec) => v.toFixed(dec);

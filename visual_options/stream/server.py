@@ -310,6 +310,19 @@ def create_app(mode: str = "sim", *, seed: int | None = None, ib_host: str = "12
         except Exception as exc:
             raise HTTPException(status_code=502, detail=f"descarga falló: {exc}")
 
+    @app.get("/api/forward")
+    async def forward_endpoint(symbol: str = "QQQ", days: int | None = None,
+                               rate: float | None = None) -> dict:
+        import asyncio as _asyncio
+
+        from visual_options.stream import forward as fwd
+        try:
+            return await _asyncio.to_thread(fwd.forward_analysis, symbol, days, rate)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"descarga falló: {exc}")
+
     @app.get("/api/notebooks")
     async def notebooks_endpoint(symbol: str = "ES=F", variant: str = "daily") -> dict:
         import asyncio as _asyncio

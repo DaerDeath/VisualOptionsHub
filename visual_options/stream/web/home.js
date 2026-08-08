@@ -61,6 +61,11 @@ const VIEW_CARDS = [
     art: "vcart",
   },
   {
+    view: "forward", name: "Forward & Cost of Carry", ready: true,
+    desc: "Fórmula del libro paso a paso (NOVM): interés simple menos dividendos = Cost of Carry; Spot + Cost of Carry = Forward Price.",
+    art: "fwart",
+  },
+  {
     view: "oi", name: "Perfil de OI", ready: true,
     desc: "Open interest de calls y puts en espejo por strike con put/call ratio.",
     art: "oi",
