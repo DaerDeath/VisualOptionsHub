@@ -310,6 +310,20 @@ def create_app(mode: str = "sim", *, seed: int | None = None, ib_host: str = "12
         except Exception as exc:
             raise HTTPException(status_code=502, detail=f"descarga falló: {exc}")
 
+    @app.get("/api/grading")
+    async def grading_endpoint(symbol: str = "QQQ", bias: str = "neutral", side: str = "buy",
+                               manual_fail: str = "") -> dict:
+        import asyncio as _asyncio
+
+        from visual_options.stream import grading_live
+        fails = tuple(k.strip() for k in manual_fail.split(",") if k.strip())
+        try:
+            return await _asyncio.to_thread(grading_live.auto_grade, symbol, bias, side, fails)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"descarga falló: {exc}")
+
     @app.get("/api/portfolio")
     async def portfolio_endpoint(source: str = "ibkr") -> dict:
         """Posiciones y P&L reales — SOLO LECTURA, no coloca órdenes."""

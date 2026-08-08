@@ -141,6 +141,13 @@ const GUIDE_SECTIONS = [
     <b>ECO</b> (calendario macro con consenso de economistas) y <b>CEPR</b> (directorio de exchanges,
     sin utilidad práctica aquí). El resto del apéndice (32 pantallas) está cubierto por alguna vista
     de la app, aunque no lleve el mismo nombre de 4 letras — mira las tarjetas de arriba.</p>`],
+  ["Grading (A-F)", "grading", `
+    <p>El checklist de calificación del Cap. 2: cada operación empieza en <b>A</b> y baja un grado
+    por cada criterio incumplido (A→10% de cartera máx., F→no operar). 10 de los 17 criterios se
+    calculan solos con datos reales (volumen, medias móviles, Bollinger, MACD, ATR, IV vs HV,
+    volumen y spreads de opciones); los otros 7 —conocer el negocio, tu estado mental, etc.— son
+    subjetivos <i>por diseño</i> del libro y se marcan a mano con un clic. Clic en cualquier
+    criterio automático también lo anula si no estás de acuerdo con el cálculo.</p>`],
   ["Portafolio", "portfolio", `
     <p><b>Solo lectura</b> — esta vista nunca coloca, modifica ni cancela ninguna orden, solo lee
     lo que ya tienes abierto. Con <b>IBKR</b> el P&amp;L lo calcula el propio TWS (más fiable que

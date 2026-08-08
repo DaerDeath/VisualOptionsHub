@@ -141,6 +141,11 @@ const VIEW_CARDS = [
     art: "nbart",
   },
   {
+    view: "grading", name: "Grading (A-F)", ready: true,
+    desc: "El checklist de calificación del Cap. 2 con 10 de 17 criterios calculados solos; el resto se marca a mano como pide el libro.",
+    art: "grart",
+  },
+  {
     view: "alerts", name: "Alertas", ready: true,
     desc: "Avisos locales: precio cruza nivel, call sell % bajo (squeeze), cruce del gamma flip. Beep + notificación.",
     art: "alertsart",

@@ -12,6 +12,7 @@ const VIEWS = {
   termstructure: TermStructureView, volcone: VolConeView, correlation: CorrelationView,
   forward: ForwardView,
   stats: StatsView, backtest: BacktestView, notebooks: NotebooksView, portfolio: PortfolioView,
+  grading: GradingView,
   alerts: AlertsView, journal: JournalView,
   guide: GuideView,
 };
@@ -27,6 +28,7 @@ const VIEW_TITLES = {
   termstructure: "estructura de plazos", volcone: "cono de volatilidad", correlation: "correlación",
   forward: "forward y cost of carry",
   stats: "estadísticos", backtest: "backtest", notebooks: "notebooks (original)", portfolio: "portafolio",
+  grading: "grading (checklist A-F)",
   alerts: "alertas", journal: "diario", guide: "guía",
 };
 
@@ -127,7 +129,7 @@ const NAV_GROUPS = [
   ["Opciones", ["chain", "vol", "termstructure", "volcone", "forward", "probs", "maxpain", "pcr", "calc"]],
   ["Análisis", ["company", "correlation", "scanner", "stats", "backtest", "notebooks"]],
   ["Cuenta", ["portfolio"]],
-  ["Herramientas", ["alerts", "journal", "guide"]],
+  ["Herramientas", ["grading", "alerts", "journal", "guide"]],
 ];
 const NAV_SHORT = {
   flow: "Flujo", dealer: "Dealer", levels: "Niveles", heatmap: "Heatmap GEX",
@@ -138,7 +140,7 @@ const NAV_SHORT = {
   forward: "Forward & Carry", probs: "Probabilidades", maxpain: "Max Pain", pcr: "Put/Call", calc: "Calculadora",
   company: "Empresa", correlation: "Correlación", scanner: "Scanner", stats: "Estadísticos",
   backtest: "Backtest", notebooks: "Notebooks", portfolio: "Portafolio",
-  alerts: "Alertas", journal: "Diario", guide: "Guía",
+  grading: "Grading", alerts: "Alertas", journal: "Diario", guide: "Guía",
 };
 
 function renderNav(activeView, symbol) {
