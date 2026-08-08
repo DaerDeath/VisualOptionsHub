@@ -347,6 +347,18 @@ def create_app(mode: str = "sim", *, seed: int | None = None, ib_host: str = "12
         except Exception as exc:
             raise HTTPException(status_code=502, detail=f"no se pudo leer el portafolio: {exc}")
 
+    @app.get("/api/stress")
+    async def stress_endpoint(source: str = "ibkr") -> dict:
+        from visual_options.stream import stress as st
+        try:
+            token = tradier_token or os.environ.get("TRADIER_TOKEN", "")
+            return await st.stress_test(source, ib_host=ib_host, ib_port=ib_port,
+                                        tradier_token=token or None)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"no se pudo calcular el stress test: {exc}")
+
     @app.get("/api/forward")
     async def forward_endpoint(symbol: str = "QQQ", days: int | None = None,
                                rate: float | None = None) -> dict:

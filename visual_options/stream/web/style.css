@@ -581,6 +581,14 @@ canvas { flex: 1; width: 100%; height: 100%; display: block; cursor: crosshair; 
   font-family: var(--mono);
   color: var(--accent);
 }
+.art-stressart::before {
+  content: "⚡";
+  display: grid;
+  place-items: center;
+  height: 100%;
+  font-size: 1.6rem;
+  color: var(--sold);
+}
 
 /* ------------------------------------------------------------- grading */
 .grade-badge-wrap {
@@ -921,6 +929,10 @@ canvas { flex: 1; width: 100%; height: 100%; display: block; cursor: crosshair; 
 .scan-empty { text-align: center !important; color: var(--text-dim); padding: 1.4rem !important; }
 td.pos, .metric.pos b { color: var(--bought); }
 td.neg, .metric.neg b { color: var(--sold); }
+
+.stress-table td { font-weight: 600; cursor: default; }
+.stress-table tbody tr:hover { background: none; }
+.stress-table td.stress-zero { outline: 2px solid var(--accent); outline-offset: -2px; }
 .tape-filters { margin-left: auto; display: flex; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; }
 .tape-big td { background: rgba(232, 184, 75, 0.05); }
 

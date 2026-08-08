@@ -154,6 +154,15 @@ const GUIDE_SECTIONS = [
     recalcularlo aquí); con <b>Tradier</b> se calcula a partir del coste base y el precio actual,
     con griegas ORATS por posición. Los totales de la cabecera son la suma de todas tus posiciones:
     tu exposición real agregada, no la de una sola estrategia suelta.</p>`],
+  ["Stress Test", "stress", `
+    <p>Lee tus posiciones REALES (mismo origen que Portafolio, solo lectura) y recalcula el P&amp;L
+    de toda la cartera bajo una matriz de escenarios: shocks de precio del subyacente (±2.5% a ±10%)
+    cruzados con shocks de IV (±15% y ±30%). Cada opción se reprecifica con el propio Black-Scholes
+    del toolkit, resolviendo primero su IV implícita desde el precio de mercado reportado — no depende
+    de que el bróker entregue la griega. Si falta el precio de una posición cae a un fallback lineal
+    por delta, y si falta el spot del subyacente esa posición no aporta al escenario (se cuenta aparte
+    en "sin modelar"). La celda 0%/0% siempre debe rondar tu P&amp;L no realizado actual — es la forma
+    rápida de verificar que el modelo cuadra con la realidad.</p>`],
   ["Alertas", "alerts", `
     <p>Avisos locales del navegador: precio cruza un nivel, call/put sell % bajo un umbral
     o cruce del gamma flip. Suena un beep y sale notificación. Se revisan con cada tick

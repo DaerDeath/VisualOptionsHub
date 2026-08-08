@@ -161,6 +161,11 @@ const VIEW_CARDS = [
     art: "pfart",
   },
   {
+    view: "stress", name: "Stress Test", ready: true,
+    desc: "P&L de tu portafolio real bajo shocks de precio e IV, recalculado con BSM — 'qué pasa si SPY cae 5% y la IV sube 20%'.",
+    art: "stressart",
+  },
+  {
     view: "guide", name: "Guía", ready: true,
     desc: "Cómo leer cada apartado de la terminal: reglas, conceptos y trucos, en cristiano.",
     art: "guideart",

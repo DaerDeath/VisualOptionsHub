@@ -12,7 +12,7 @@ const VIEWS = {
   termstructure: TermStructureView, volcone: VolConeView, correlation: CorrelationView,
   forward: ForwardView,
   stats: StatsView, backtest: BacktestView, notebooks: NotebooksView, portfolio: PortfolioView,
-  grading: GradingView,
+  grading: GradingView, stress: StressView,
   alerts: AlertsView, journal: JournalView,
   guide: GuideView,
 };
@@ -28,7 +28,7 @@ const VIEW_TITLES = {
   termstructure: "estructura de plazos", volcone: "cono de volatilidad", correlation: "correlación",
   forward: "forward y cost of carry",
   stats: "estadísticos", backtest: "backtest", notebooks: "notebooks (original)", portfolio: "portafolio",
-  grading: "grading (checklist A-F)",
+  grading: "grading (checklist A-F)", stress: "stress test",
   alerts: "alertas", journal: "diario", guide: "guía",
 };
 
@@ -128,7 +128,7 @@ const NAV_GROUPS = [
   ["Precio", ["setup", "footprint", "vwap", "cvd", "tpo"]],
   ["Opciones", ["chain", "vol", "termstructure", "volcone", "forward", "probs", "maxpain", "pcr", "calc"]],
   ["Análisis", ["company", "correlation", "scanner", "stats", "backtest", "notebooks"]],
-  ["Cuenta", ["portfolio"]],
+  ["Cuenta", ["portfolio", "stress"]],
   ["Herramientas", ["grading", "alerts", "journal", "guide"]],
 ];
 const NAV_SHORT = {
@@ -139,7 +139,7 @@ const NAV_SHORT = {
   vol: "Volatilidad", termstructure: "Estructura de plazos", volcone: "Cono de volatilidad",
   forward: "Forward & Carry", probs: "Probabilidades", maxpain: "Max Pain", pcr: "Put/Call", calc: "Calculadora",
   company: "Empresa", correlation: "Correlación", scanner: "Scanner", stats: "Estadísticos",
-  backtest: "Backtest", notebooks: "Notebooks", portfolio: "Portafolio",
+  backtest: "Backtest", notebooks: "Notebooks", portfolio: "Portafolio", stress: "Stress Test",
   grading: "Grading", alerts: "Alertas", journal: "Diario", guide: "Guía",
 };
 
