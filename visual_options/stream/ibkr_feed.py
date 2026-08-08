@@ -56,9 +56,19 @@ class IBKRFeed:
                 await self._run_task
 
     async def run(self) -> None:
+        try:
+            await self._run_inner()
+        except Exception as exc:
+            self.state.connected = False
+            print(f"[ibkr] {type(exc).__name__}: {exc}")
+
+    async def _run_inner(self) -> None:
         from ib_async import Option, Stock
         ib = self.IB()
         await ib.connectAsync(self.host, self.port, clientId=self.client_id, timeout=15)
+        # 3 = usa datos retrasados donde no haya suscripción en vivo;
+        # con suscripción sigue llegando tiempo real
+        ib.reqMarketDataType(3)
         self.state.connected = True
         try:
             stock = Stock(self.symbol, "SMART", "USD")

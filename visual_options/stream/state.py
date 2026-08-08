@@ -44,6 +44,7 @@ class SeriesPoint:
     price: float
     put_sell_pct: float
     call_sell_pct: float
+    iv: float = 0.0               # IV ATM en ese instante (fracción)
 
 
 @dataclass
@@ -77,7 +78,16 @@ class DashboardState:
             return 0.0
         return sum(r.call_volume * r.call_sold_pct for r in self.strikes) / total
 
+    def atm_iv(self) -> float:
+        """IV del strike más cercano al spot (0 si no hay datos)."""
+        rows = [r for r in self.strikes if r.iv > 0]
+        if not rows or not self.spot:
+            return 0.0
+        return min(rows, key=lambda r: abs(r.strike - self.spot)).iv
+
     def append_point(self, point: SeriesPoint) -> None:
+        if point.iv == 0.0:
+            point.iv = round(self.atm_iv(), 4)
         self.series.append(point)
         if len(self.series) > MAX_SERIES_POINTS:
             del self.series[: len(self.series) - MAX_SERIES_POINTS]

@@ -13,7 +13,7 @@ const VolView = {
         <section class="panel">
           <div class="panel-head">
             <h2>Volatilidad</h2>
-            <span class="hint">smile de IV por strike · ámbar = spot · bandas = movimiento esperado</span>
+            <span class="hint">smile de IV por strike · barras = volumen operado · ámbar = spot · bandas = movimiento esperado</span>
             <div class="dealer-totals" id="volTotals"></div>
           </div>
           <canvas id="volCanvas"></canvas>
@@ -38,9 +38,10 @@ const VolView = {
     const atm = rows.reduce((a, b) =>
       Math.abs(b.strike - d.spot) < Math.abs(a.strike - d.spot) ? b : a);
     const low = rows[0], high = rows[rows.length - 1];
-    const skew = (low.iv - high.iv) * 100;  // skew put-call en puntos de IV
+    const skew = (low.iv - high.iv) * 100;            // en puntos de IV
+    const skewPct = atm.iv ? (low.iv - high.iv) / atm.iv * 100 : 0;  // relativo al ATM
     const em1 = d.spot * atm.iv * Math.sqrt(Math.max(d.expiry_days, 0.25) / 365);
-    return { rows, atm, skew, em1 };
+    return { rows, atm, skew, skewPct, em1 };
   },
 
   onData(payload) {
@@ -49,7 +50,7 @@ const VolView = {
     if (s) {
       this.totalsEl.innerHTML =
         `<span class="dtotal">IV ATM ${(s.atm.iv * 100).toFixed(1)}%</span>` +
-        `<span class="dtotal ${s.skew >= 0 ? "neg" : "pos"}">skew ${s.skew >= 0 ? "+" : ""}${s.skew.toFixed(1)}pt</span>` +
+        `<span class="dtotal ${s.skew >= 0 ? "neg" : "pos"}" title="IV strike bajo − IV strike alto">skew ${s.skew >= 0 ? "+" : ""}${s.skew.toFixed(1)}pt (${s.skewPct >= 0 ? "+" : ""}${s.skewPct.toFixed(2)}%)</span>` +
         `<span class="dtotal">±1σ ${s.em1.toFixed(2)} (${(s.em1 / this.data.spot * 100).toFixed(2)}%)</span>` +
         `<span class="dtotal">${this.data.expiry_days.toFixed(1)}d</span>`;
     }
@@ -78,6 +79,16 @@ const VolView = {
       ctx.fillStyle = `rgba(232, 184, 75, ${alpha})`;
       ctx.fillRect(x(from), P.t, x(to) - x(from), h - P.t - P.b);
     }
+
+    // volumen operado por strike, de fondo (como el histograma del stream)
+    const maxVol = Math.max(1, ...rows.map(r => r.call_volume + r.put_volume));
+    const barW = Math.max(3, (w - P.l - P.r) / rows.length * 0.55);
+    rows.forEach(r => {
+      const total = r.call_volume + r.put_volume;
+      const bh = (h - P.t - P.b) * 0.85 * total / maxVol;
+      ctx.fillStyle = "rgba(64, 224, 178, 0.28)";
+      ctx.fillRect(x(r.strike) - barW / 2, h - P.b - bh, barW, bh);
+    });
 
     // rejilla y ejes
     ctx.font = MONO;

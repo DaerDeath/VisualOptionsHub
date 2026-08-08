@@ -16,13 +16,14 @@ const FlowView = {
           <div class="panel-head">
             <h2>Cadena · volumen y % vendido por strike</h2>
             <span class="hint">calls arriba · puts abajo · rojo = vendido, verde = comprado · blanco = perfil de volumen</span>
+            <div class="dealer-totals" id="flowStats"></div>
           </div>
           <canvas id="profileCanvas"></canvas>
         </section>
         <section class="panel panel-series">
           <div class="panel-head">
             <h2>Flujo agregado vs precio</h2>
-            <span class="hint">azul baja → precio sube · roja baja → el precio la sigue</span>
+            <span class="hint">azul baja → precio sube · roja baja → el precio la sigue · naranja = IV</span>
           </div>
           <canvas id="seriesCanvas"></canvas>
         </section>
@@ -36,6 +37,7 @@ const FlowView = {
         </section>
       </div>`;
 
+    this.statsEl = root.querySelector("#flowStats");
     const profile = new Panel(root.querySelector("#profileCanvas"), (c, w, h) => this.drawProfile(c, w, h));
     const series = new Panel(root.querySelector("#seriesCanvas"), (c, w, h) => this.drawSeries(c, w, h));
     const gamma = new Panel(root.querySelector("#gammaCanvas"), (c, w, h) => this.drawGamma(c, w, h));
@@ -53,7 +55,23 @@ const FlowView = {
 
   onData(payload) {
     this.data = payload.flow;
+    this.renderStats();
     this.render();
+  },
+
+  /* fila de métricas del stream: IV · Gamma per 1% · EMtop/EMbot */
+  renderStats() {
+    const d = this.data;
+    if (!this.statsEl || !d.strikes.length) return;
+    const last = d.series[d.series.length - 1];
+    const iv = last && last.iv > 0 ? last.iv : 0.2;
+    const totalGex = d.strikes.reduce((acc, r) => acc + r.net_gex, 0);
+    const em = d.spot * iv * Math.sqrt(Math.max(d.expiry_days, 0.25) / 365);
+    this.statsEl.innerHTML =
+      `<span class="dtotal">IV ${(iv * 100).toFixed(2)}%</span>` +
+      `<span class="dtotal ${totalGex >= 0 ? "pos" : "neg"}" title="Σ Net GEX por 1% de movimiento">Γ/1% ${totalGex >= 0 ? "+" : ""}${totalGex.toFixed(1)}M</span>` +
+      `<span class="dtotal pos" title="movimiento esperado +1σ">EMtop ${(d.spot + em).toFixed(2)}</span>` +
+      `<span class="dtotal neg" title="movimiento esperado −1σ">EMbot ${(d.spot - em).toFixed(2)}</span>`;
   },
 
   render() {
@@ -166,7 +184,8 @@ const FlowView = {
   seriesScales(w, h) {
     const pts = this.data.series;
     const S = this.SPAD;
-    const pctMax = Math.max(20, ...pts.map(p => Math.max(p.put_sell_pct, p.call_sell_pct))) * 1.1;
+    const pctMax = Math.max(20, ...pts.map(p =>
+      Math.max(p.put_sell_pct, p.call_sell_pct, (p.iv || 0) * 100))) * 1.1;
     const prices = pts.map(p => p.price);
     const pMin = Math.min(...prices), pMax = Math.max(...prices);
     const pad = Math.max(0.4, (pMax - pMin) * 0.08);
@@ -211,6 +230,9 @@ const FlowView = {
     };
     line(p => p.put_sell_pct, s.yPct, COLORS.put, 1.4);
     line(p => p.call_sell_pct, s.yPct, COLORS.call, 1.4);
+    if (s.pts.some(p => p.iv > 0)) {
+      line(p => p.iv * 100, s.yPct, "#e0954b", 1.3);  // IV en naranja, eje %
+    }
     line(p => p.price, s.yPrice, COLORS.price, 1.8);
 
     ctx.fillStyle = COLORS.dim;
@@ -365,7 +387,8 @@ const FlowView = {
         `<div class="tt-title">${p.t}</div>` +
         `<div>precio ${p.price.toFixed(2)}</div>` +
         `<div class="tt-put">put sell ${p.put_sell_pct.toFixed(1)}%</div>` +
-        `<div class="tt-call">call sell ${p.call_sell_pct.toFixed(1)}%</div>`,
+        `<div class="tt-call">call sell ${p.call_sell_pct.toFixed(1)}%</div>` +
+        (p.iv > 0 ? `<div style="color:#e0954b">IV ${(p.iv * 100).toFixed(2)}%</div>` : ""),
         e.clientX, e.clientY);
       this.render();
     });
