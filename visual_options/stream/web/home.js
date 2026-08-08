@@ -151,6 +151,11 @@ const VIEW_CARDS = [
     art: "journalart",
   },
   {
+    view: "portfolio", name: "Portafolio", ready: true,
+    desc: "Posiciones, P&L y griegas agregadas de tu cuenta REAL (IBKR/Tradier) — solo lectura, nunca coloca órdenes.",
+    art: "pfart",
+  },
+  {
     view: "guide", name: "Guía", ready: true,
     desc: "Cómo leer cada apartado de la terminal: reglas, conceptos y trucos, en cristiano.",
     art: "guideart",

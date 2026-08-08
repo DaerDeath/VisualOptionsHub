@@ -11,7 +11,7 @@ const VIEWS = {
   vwap: VwapView, pcr: PcrView, chain: ChainView, company: CompanyView,
   termstructure: TermStructureView, volcone: VolConeView, correlation: CorrelationView,
   forward: ForwardView,
-  stats: StatsView, backtest: BacktestView, notebooks: NotebooksView,
+  stats: StatsView, backtest: BacktestView, notebooks: NotebooksView, portfolio: PortfolioView,
   alerts: AlertsView, journal: JournalView,
   guide: GuideView,
 };
@@ -26,7 +26,7 @@ const VIEW_TITLES = {
   chain: "cadena + griegas", company: "empresa",
   termstructure: "estructura de plazos", volcone: "cono de volatilidad", correlation: "correlación",
   forward: "forward y cost of carry",
-  stats: "estadísticos", backtest: "backtest", notebooks: "notebooks (original)",
+  stats: "estadísticos", backtest: "backtest", notebooks: "notebooks (original)", portfolio: "portafolio",
   alerts: "alertas", journal: "diario", guide: "guía",
 };
 
@@ -126,6 +126,7 @@ const NAV_GROUPS = [
   ["Precio", ["setup", "footprint", "vwap", "cvd", "tpo"]],
   ["Opciones", ["chain", "vol", "termstructure", "volcone", "forward", "probs", "maxpain", "pcr", "calc"]],
   ["Análisis", ["company", "correlation", "scanner", "stats", "backtest", "notebooks"]],
+  ["Cuenta", ["portfolio"]],
   ["Herramientas", ["alerts", "journal", "guide"]],
 ];
 const NAV_SHORT = {
@@ -136,7 +137,7 @@ const NAV_SHORT = {
   vol: "Volatilidad", termstructure: "Estructura de plazos", volcone: "Cono de volatilidad",
   forward: "Forward & Carry", probs: "Probabilidades", maxpain: "Max Pain", pcr: "Put/Call", calc: "Calculadora",
   company: "Empresa", correlation: "Correlación", scanner: "Scanner", stats: "Estadísticos",
-  backtest: "Backtest", notebooks: "Notebooks",
+  backtest: "Backtest", notebooks: "Notebooks", portfolio: "Portafolio",
   alerts: "Alertas", journal: "Diario", guide: "Guía",
 };
 

@@ -33,7 +33,7 @@ def test_views_registered_consistently():
 
     nav_block = re.search(r"const NAV_GROUPS = \[(.*?)\];\n", app_js, re.S).group(1)
     nav_ids = set(re.findall(r"\"(\w+)\"", nav_block)) - {
-        "Mercado", "Precio", "Opciones", "Análisis", "Herramientas"}
+        "Mercado", "Precio", "Opciones", "Análisis", "Herramientas", "Cuenta"}
     assert nav_ids <= view_ids, f"vistas en NAV sin registrar: {nav_ids - view_ids}"
 
     scripts = set(re.findall(r'/static/(\w+)\.js', index_html))

@@ -310,6 +310,29 @@ def create_app(mode: str = "sim", *, seed: int | None = None, ib_host: str = "12
         except Exception as exc:
             raise HTTPException(status_code=502, detail=f"descarga falló: {exc}")
 
+    @app.get("/api/portfolio")
+    async def portfolio_endpoint(source: str = "ibkr") -> dict:
+        """Posiciones y P&L reales — SOLO LECTURA, no coloca órdenes."""
+        from visual_options.stream import portfolio as pf
+        try:
+            if source == "ibkr":
+                if "ibkr" not in factories:
+                    raise HTTPException(status_code=400,
+                                        detail="IBKR no disponible: instala con uv sync --extra ibkr")
+                return await pf.ibkr_portfolio(host=ib_host, port=ib_port)
+            if source in ("tradier", "tradier-delayed"):
+                token = tradier_token or os.environ.get("TRADIER_TOKEN", "")
+                if not token:
+                    raise HTTPException(status_code=400, detail="falta TRADIER_TOKEN")
+                env = "prod" if source == "tradier" else "sandbox"
+                return await pf.tradier_portfolio(token, env)
+            raise HTTPException(status_code=400,
+                                detail="portafolio solo disponible con source=ibkr o tradier")
+        except HTTPException:
+            raise
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"no se pudo leer el portafolio: {exc}")
+
     @app.get("/api/forward")
     async def forward_endpoint(symbol: str = "QQQ", days: int | None = None,
                                rate: float | None = None) -> dict:

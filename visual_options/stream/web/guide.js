@@ -141,6 +141,12 @@ const GUIDE_SECTIONS = [
     <b>ECO</b> (calendario macro con consenso de economistas) y <b>CEPR</b> (directorio de exchanges,
     sin utilidad práctica aquí). El resto del apéndice (32 pantallas) está cubierto por alguna vista
     de la app, aunque no lleve el mismo nombre de 4 letras — mira las tarjetas de arriba.</p>`],
+  ["Portafolio", "portfolio", `
+    <p><b>Solo lectura</b> — esta vista nunca coloca, modifica ni cancela ninguna orden, solo lee
+    lo que ya tienes abierto. Con <b>IBKR</b> el P&amp;L lo calcula el propio TWS (más fiable que
+    recalcularlo aquí); con <b>Tradier</b> se calcula a partir del coste base y el precio actual,
+    con griegas ORATS por posición. Los totales de la cabecera son la suma de todas tus posiciones:
+    tu exposición real agregada, no la de una sola estrategia suelta.</p>`],
   ["Alertas", "alerts", `
     <p>Avisos locales del navegador: precio cruza un nivel, call/put sell % bajo un umbral
     o cruce del gamma flip. Suena un beep y sale notificación. Se revisan con cada tick
