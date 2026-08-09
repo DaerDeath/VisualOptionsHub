@@ -25,8 +25,20 @@ def _heuristic_clock(now: datetime | None = None) -> dict:
                         else "mercado cerrado (estimado, no cuenta feriados)"),
         "next_change": None,
         "next_state": None,
+        "half_day": False,
         "source": "heuristic",
     }
+
+
+async def _today_half_day(token: str, env: str, client: httpx.AsyncClient) -> bool:
+    """Nunca debe tumbar el clock: si el calendario falla, se asume que
+    no es medio día en vez de romper el badge entero."""
+    from visual_options.stream.marketcalendar import today_entry
+    try:
+        entry = await today_entry(token, env, client=client)
+        return bool(entry and entry.get("half_day"))
+    except Exception:
+        return False
 
 
 async def market_clock(token: str | None = None, env: str = "prod",
@@ -50,6 +62,7 @@ async def market_clock(token: str | None = None, env: str = "prod",
             "description": clock.get("description", ""),
             "next_change": clock.get("next_change"),
             "next_state": clock.get("next_state"),
+            "half_day": await _today_half_day(token, env, client),
             "source": "tradier",
         }
     except httpx.HTTPError:

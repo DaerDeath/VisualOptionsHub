@@ -88,7 +88,12 @@ const GUIDE_SECTIONS = [
     historial de sorpresas EPS — clave para el checklist del Cap. 7), <b>ANR</b> (recomendaciones
     apiladas y price targets con upside), <b>SIA</b> (interés en corto: % del float, días para
     cubrir y tendencia — alto + giro alcista = mecha de short squeeze) y <b>N</b> (titulares).
-    Abajo, los criterios del libro evaluados automáticamente. Caché de 10 minutos.</p>`],
+    Abajo, los criterios del libro evaluados automáticamente. Caché de 10 minutos.</p>
+    <p>Con Tradier se suman dos datos opcionales, en silencio si no hay token: si el símbolo está
+    en la lista <b>Easy-To-Borrow</b> (junto al interés en corto) y un perfil de sector/industria de
+    la <b>API beta de fundamentals</b> de Tradier — esta última es la parte menos estable de todo lo
+    que integra el toolkit (es beta, no todos los planes la incluyen), así que si no aparece nada no
+    es un error: simplemente tu cuenta no tiene acceso a esa beta en particular.</p>`],
   ["Scanner", "scanner", `
     <p>Señales por símbolo: <b>Dirección</b> = put sell % − call sell % (positivo = presión alcista).
     <b>Régimen</b> = signo del GEX total. <b>Dist. flip</b> = colchón hasta el gamma flip (pequeño = peligro
@@ -211,6 +216,14 @@ const GuideView = {
               mostrar ahí — no puede repetirse la misma vista en dos paneles a la vez (cada una
               dibuja sobre sus propios elementos, así que duplicarla pisaría el mismo canvas).
               La elección de paneles se recuerda entre sesiones.</p>
+            </article>
+            <article class="guide-sec guide-foot">
+              <h3>Estado del mercado</h3>
+              <p>El badge junto al reloj de la cabecera ("● mercado abierto" / "○ mercado cerrado")
+              usa el clock exacto de Tradier cuando hay token (cuenta feriados) y, cuando además
+              detecta que hoy cierra antes de las 16:00 de siempre (Black Friday, vísperas de
+              feriado), agrega "(medio día)" — mirá el tooltip para la hora del próximo cambio. Sin
+              token cae a una heurística simple (lunes a viernes, 9:30-16:00 hora NY, sin feriados).</p>
             </article>
             <article class="guide-sec guide-foot">
               <h3>Fuentes de datos</h3>

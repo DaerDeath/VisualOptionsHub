@@ -446,6 +446,47 @@ def create_app(mode: str = "sim", *, seed: int | None = None, ib_host: str = "12
             env = "prod" if source == "tradier" else "sandbox"
         return await mc.market_clock(token or None, env)
 
+    @app.get("/api/marketcalendar")
+    async def marketcalendar_endpoint(source: str = "tradier", month: int | None = None,
+                                      year: int | None = None) -> dict:
+        """Feriados y medios días del mes — el clock solo dice el estado
+        de hoy, esto anticipa cierres tempranos con antelación."""
+        import httpx
+
+        from visual_options.stream import marketcalendar as mcal
+        token, env = _tradier_token_for(source)
+        try:
+            return await mcal.market_calendar(token, env, month, year)
+        except httpx.HTTPError as exc:
+            raise HTTPException(status_code=502, detail=f"no se pudo leer el calendario: {exc}")
+
+    @app.get("/api/etb")
+    async def etb_endpoint(symbol: str, source: str = "tradier") -> dict:
+        """¿Está el símbolo en la lista Easy-To-Borrow de Tradier?"""
+        import httpx
+
+        from visual_options.stream import etb as etb_mod
+        token, env = _tradier_token_for(source)
+        try:
+            easy = await etb_mod.is_easy_to_borrow(symbol, token, env)
+            return {"symbol": symbol.upper(), "easy_to_borrow": easy}
+        except httpx.HTTPError as exc:
+            raise HTTPException(status_code=502, detail=f"no se pudo leer la lista ETB: {exc}")
+
+    @app.get("/api/fundamentals")
+    async def fundamentals_endpoint(symbol: str, source: str = "tradier") -> dict:
+        """Perfil de empresa vía la API beta de fundamentals de Tradier —
+        complementa (no reemplaza) la ficha de Empresa basada en Yahoo.
+        Devuelve {} si el plan no la incluye o Tradier no tiene ficha."""
+        import httpx
+
+        from visual_options.stream import fundamentals_tradier as ft
+        token, env = _tradier_token_for(source)
+        try:
+            return await ft.company_profile(symbol, token, env)
+        except httpx.HTTPError:
+            return {}
+
     @app.get("/api/forward")
     async def forward_endpoint(symbol: str = "QQQ", days: int | None = None,
                                rate: float | None = None) -> dict:

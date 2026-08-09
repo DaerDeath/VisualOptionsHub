@@ -444,11 +444,12 @@ async function refreshMarketClock() {
   try {
     const clock = await fetch("/api/marketclock").then(r => r.json());
     const isOpen = clock.state === "open";
-    badge.textContent = isOpen ? "● mercado abierto" : "○ mercado cerrado";
+    badge.textContent = (isOpen ? "● mercado abierto" : "○ mercado cerrado") + (clock.half_day ? " (medio día)" : "");
     badge.classList.toggle("mkt-open", isOpen);
     badge.classList.toggle("mkt-closed", !isOpen);
     const next = clock.next_change ? ` · próx. cambio ${clock.next_change}` : "";
-    badge.title = `${clock.description || clock.state}${next} (${clock.source === "tradier" ? "Tradier" : "estimado"})`;
+    const half = clock.half_day ? " · hoy cierra antes de lo normal" : "";
+    badge.title = `${clock.description || clock.state}${next}${half} (${clock.source === "tradier" ? "Tradier" : "estimado"})`;
   } catch {
     badge.textContent = "";
     badge.title = "";

@@ -61,7 +61,40 @@ const CompanyView = {
       this.render(await response.json());
     } catch (err) {
       if (this.el) this.el.profile.innerHTML = `<div class="scan-empty">error: ${err.message}</div>`;
+      return;
     }
+    this.loadEtb(symbol);
+    this.loadTradierFundamentals(symbol);
+  },
+
+  /* Complementos opcionales vía Tradier — si no hay token o el plan no
+   * los incluye, fallan en silencio y la ficha de Yahoo queda igual. */
+  async loadEtb(symbol) {
+    try {
+      const r = await fetch(`/api/etb?symbol=${encodeURIComponent(symbol)}`);
+      if (!r.ok || !this.el) return;
+      const d = await r.json();
+      const badge = document.createElement("p");
+      badge.className = "hint";
+      badge.textContent = d.easy_to_borrow
+        ? "✓ fácil de pedir prestado para vender en corto (ETB, Tradier)"
+        : "✗ fuera de la lista Easy-To-Borrow de Tradier — pedirla prestada puede costar más o no estar disponible";
+      this.el.short.appendChild(badge);
+    } catch (_) { /* sin Tradier, se queda solo con el short interest de Yahoo */ }
+  },
+
+  async loadTradierFundamentals(symbol) {
+    try {
+      const r = await fetch(`/api/fundamentals?symbol=${encodeURIComponent(symbol)}`);
+      if (!r.ok || !this.el) return;
+      const d = await r.json();
+      if (!d || (!d.sector && !d.industry && !d.summary)) return;  // beta vacía o sin acceso en tu plan
+      const p = document.createElement("p");
+      p.className = "co-summary";
+      p.innerHTML = `<b>Tradier (beta):</b> ${[d.sector, d.industry].filter(Boolean).join(" · ")}` +
+        (d.employees ? ` · ${fmtK(d.employees)} empleados` : "");
+      this.el.profile.appendChild(p);
+    } catch (_) { /* la beta de fundamentals no está en todos los planes */ }
   },
 
   render(d) {

@@ -42,11 +42,17 @@ def test_market_clock_without_token_uses_heuristic():
 
 
 def test_market_clock_with_token_uses_tradier():
+    from visual_options.stream import marketcalendar as mcal
+    mcal._cache.clear()
+
     def handler(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(200, json={"clock": {
-            "state": "open", "description": "Market is open",
-            "next_change": "16:00", "next_state": "close",
-        }})
+        if request.url.path.endswith("/markets/clock"):
+            return httpx.Response(200, json={"clock": {
+                "state": "open", "description": "Market is open",
+                "next_change": "16:00", "next_state": "close",
+            }})
+        # /markets/calendar: sin datos de hoy → half_day se asume False
+        return httpx.Response(200, json={"calendar": {"days": {"day": []}}})
 
     client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
 
@@ -58,8 +64,57 @@ def test_market_clock_with_token_uses_tradier():
     result = asyncio.run(run())
     assert result == {
         "state": "open", "description": "Market is open",
-        "next_change": "16:00", "next_state": "close", "source": "tradier",
+        "next_change": "16:00", "next_state": "close", "half_day": False,
+        "source": "tradier",
     }
+
+
+def test_market_clock_flags_half_day_from_calendar():
+    from datetime import datetime
+
+    from visual_options.stream import marketcalendar as mcal
+    mcal._cache.clear()
+    today = datetime.now().strftime("%Y-%m-%d")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/markets/clock"):
+            return httpx.Response(200, json={"clock": {"state": "open", "description": "Early close"}})
+        return httpx.Response(200, json={"calendar": {"days": {"day": [
+            {"date": today, "status": "open", "description": "Early Close",
+             "open": {"start": "09:30", "end": "13:00"}},
+        ]}}})
+
+    client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+
+    async def run():
+        result = await mc.market_clock("token", "prod", client=client)
+        await client.aclose()
+        return result
+
+    result = asyncio.run(run())
+    assert result["half_day"] is True
+
+
+def test_market_clock_survives_calendar_failure():
+    """El calendario nunca debe tumbar el clock — si falla, half_day=False."""
+    from visual_options.stream import marketcalendar as mcal
+    mcal._cache.clear()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/markets/clock"):
+            return httpx.Response(200, json={"clock": {"state": "closed", "description": "Closed"}})
+        return httpx.Response(500)
+
+    client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+
+    async def run():
+        result = await mc.market_clock("token", "prod", client=client)
+        await client.aclose()
+        return result
+
+    result = asyncio.run(run())
+    assert result["state"] == "closed"
+    assert result["half_day"] is False
 
 
 def test_market_clock_falls_back_to_heuristic_on_http_error():
