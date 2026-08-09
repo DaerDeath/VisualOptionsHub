@@ -391,6 +391,51 @@ def create_app(mode: str = "sim", *, seed: int | None = None, ib_host: str = "12
         except httpx.HTTPError as exc:
             raise HTTPException(status_code=502, detail=f"no se pudieron leer las watchlists: {exc}")
 
+    def _tradier_token_for(source: str) -> tuple[str, str]:
+        if source not in ("tradier", "tradier-delayed"):
+            raise HTTPException(status_code=400, detail="solo disponible con Tradier")
+        token = tradier_token or os.environ.get("TRADIER_TOKEN", "")
+        if not token:
+            raise HTTPException(status_code=400, detail="falta TRADIER_TOKEN")
+        return token, ("prod" if source == "tradier" else "sandbox")
+
+    @app.get("/api/orders")
+    async def orders_endpoint(source: str = "tradier") -> dict:
+        """Órdenes reales (pendientes/ejecutadas/canceladas) — solo lectura,
+        nunca coloca, edita ni cancela nada."""
+        import httpx
+
+        from visual_options.stream import orders as ords
+        token, env = _tradier_token_for(source)
+        try:
+            return await ords.tradier_orders(token, env)
+        except httpx.HTTPError as exc:
+            raise HTTPException(status_code=502, detail=f"no se pudieron leer las órdenes: {exc}")
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+
+    @app.get("/api/gainloss")
+    async def gainloss_endpoint(source: str = "tradier") -> dict:
+        """P&L realizado de operaciones ya cerradas — solo lectura."""
+        import httpx
+
+        from visual_options.stream import gainloss as gl
+        token, env = _tradier_token_for(source)
+        try:
+            return await gl.tradier_gainloss(token, env)
+        except httpx.HTTPError as exc:
+            raise HTTPException(status_code=502, detail=f"no se pudo leer el histórico: {exc}")
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+
+    @app.get("/api/symbolsearch")
+    async def symbolsearch_endpoint(q: str = "", source: str = "tradier") -> list[dict]:
+        """Búsqueda real de símbolos vía Tradier (miles de tickers, no la
+        lista estática local)."""
+        from visual_options.stream import symbolsearch as ss
+        token, env = _tradier_token_for(source)
+        return await ss.search_symbols(q, token, env)
+
     @app.get("/api/marketclock")
     async def marketclock_endpoint(source: str = "tradier") -> dict:
         from visual_options.stream import marketclock as mc

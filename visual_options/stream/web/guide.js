@@ -166,7 +166,10 @@ const GUIDE_SECTIONS = [
     lo que ya tienes abierto. Con <b>IBKR</b> el P&amp;L lo calcula el propio TWS (más fiable que
     recalcularlo aquí); con <b>Tradier</b> se calcula a partir del coste base y el precio actual,
     con griegas ORATS por posición. Los totales de la cabecera son la suma de todas tus posiciones:
-    tu exposición real agregada, no la de una sola estrategia suelta.</p>`],
+    tu exposición real agregada, no la de una sola estrategia suelta.</p>
+    <p>Las pestañas <b>Órdenes</b> (pendientes/ejecutadas/canceladas) e <b>Histórico P&amp;L</b>
+    (operaciones ya cerradas, con win rate y ganancia/pérdida media) solo están disponibles con
+    Tradier — la Brokerage API de IBKR para esto es harina de otro costal y no está cubierta.</p>`],
   ["Stress Test", "stress", `
     <p>Lee tus posiciones REALES (mismo origen que Portafolio, solo lectura) y recalcula el P&amp;L
     de toda la cartera bajo una matriz de escenarios: shocks de precio del subyacente (±2.5% a ±10%)

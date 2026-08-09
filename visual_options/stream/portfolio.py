@@ -116,6 +116,18 @@ def _apply_greeks(position: dict, model_greeks) -> None:  # pragma: no cover
 
 # --------------------------------------------------------------- Tradier
 
+async def resolve_tradier_account(client, base: str) -> str:
+    """Primer account_number del perfil — compartido por posiciones,
+    órdenes y gainloss (todas necesitan el mismo id de cuenta)."""
+    profile = (await client.get(f"{base}/user/profile")).json()
+    accounts = profile.get("profile", {}).get("account") or []
+    if isinstance(accounts, dict):
+        accounts = [accounts]
+    if not accounts:
+        raise ValueError("la cuenta de Tradier no tiene accounts en el perfil")
+    return accounts[0]["account_number"]
+
+
 async def tradier_portfolio(token: str, env: str = "prod", client=None) -> dict:
     """`client` inyectable (httpx.AsyncClient) para tests."""
     import httpx
@@ -124,13 +136,7 @@ async def tradier_portfolio(token: str, env: str = "prod", client=None) -> dict:
     client = client or httpx.AsyncClient(
         headers={"Authorization": f"Bearer {token}", "Accept": "application/json"}, timeout=15.0)
     try:
-        profile = (await client.get(f"{base}/user/profile")).json()
-        accounts = profile.get("profile", {}).get("account") or []
-        if isinstance(accounts, dict):
-            accounts = [accounts]
-        if not accounts:
-            raise ValueError("la cuenta de Tradier no tiene accounts en el perfil")
-        account_id = accounts[0]["account_number"]
+        account_id = await resolve_tradier_account(client, base)
 
         balances = (await client.get(f"{base}/accounts/{account_id}/balances")).json()
         balances = balances.get("balances", {})

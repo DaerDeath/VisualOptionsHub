@@ -24,14 +24,16 @@ const StressView = {
           <div class="co-body" id="stMatrix" style="flex:1"></div>
         </section>
       </div>`;
-    this.tilesEl = document.getElementById("stTiles");
-    this.matrixEl = document.getElementById("stMatrix");
-    document.querySelectorAll("[data-src]").forEach(btn => btn.addEventListener("click", () => {
+    this.tilesEl = root.querySelector("#stTiles");
+    this.matrixEl = root.querySelector("#stMatrix");
+    // scopeado a `root`: el header global también tiene botones con
+    // data-src (fuente de mercado) que no deben pisar este estado.
+    root.querySelectorAll("[data-src]").forEach(btn => btn.addEventListener("click", () => {
       this.source = btn.dataset.src;
-      document.querySelectorAll("[data-src]").forEach(b => b.classList.toggle("active", b === btn));
+      root.querySelectorAll("[data-src]").forEach(b => b.classList.toggle("active", b === btn));
       this.load();
     }));
-    document.getElementById("stRefresh").addEventListener("click", () => this.load());
+    root.querySelector("#stRefresh").addEventListener("click", () => this.load());
     this.load();
   },
 

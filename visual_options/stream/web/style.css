@@ -1008,6 +1008,26 @@ td.neg, .metric.neg b { color: var(--sold); }
   padding: 0.25rem 0.4rem;
 }
 .scr-skipped { padding: 0.5rem 0.9rem; }
+
+.pf-tabs {
+  display: flex;
+  gap: 0.3rem;
+  padding: 0.5rem 0.9rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.pf-tab {
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  color: var(--text-dim);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  padding: 0.35rem 0.8rem;
+  cursor: pointer;
+}
+.pf-tab:hover { color: var(--text); background: var(--surface-2); }
+.pf-tab.active { color: var(--accent); background: var(--surface); border-color: var(--accent); }
 .tape-filters { margin-left: auto; display: flex; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; }
 .tape-big td { background: rgba(232, 184, 75, 0.05); }
 

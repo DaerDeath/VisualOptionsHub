@@ -135,8 +135,9 @@ function attachSymbolPicker(input, { onPick, onEnter } = {}) {
 
   const close = () => { dropdown.hidden = true; highlighted = -1; };
 
-  const render = () => {
-    items = searchSymbols(input.value);
+  /* Redibuja el dropdown desde `items` (sin volver a buscar) — para
+   * navegación con flechas o para pintar resultados remotos ya llegados. */
+  const renderDropdown = () => {
     if (!items.length) { close(); return; }
     highlighted = Math.min(highlighted, items.length - 1);
     dropdown.innerHTML = items.map(([ticker, name], i) =>
@@ -157,6 +158,29 @@ function attachSymbolPicker(input, { onPick, onEnter } = {}) {
     dropdown.hidden = false;
   };
 
+  /* Búsqueda local instantánea + enriquecimiento con /api/symbolsearch
+   * (Tradier, miles de tickers reales) cuando llega — sin token o sin
+   * red, se queda con la lista local de siempre, sin romper nada. */
+  let searchToken = 0;
+  const render = () => {
+    const query = input.value.trim();
+    items = searchSymbols(query);
+    renderDropdown();
+    if (!query) return;
+    const token = ++searchToken;
+    fetch(`/api/symbolsearch?q=${encodeURIComponent(query)}`)
+      .then(r => r.ok ? r.json() : [])
+      .then(remote => {
+        if (token !== searchToken || !remote.length) return;  // el input ya cambió, o nada nuevo
+        const seen = new Set(items.map(([ticker]) => ticker));
+        const extra = remote.filter(r => !seen.has(r.symbol)).map(r => [r.symbol, r.name || ""]);
+        if (!extra.length) return;
+        items = [...items, ...extra].slice(0, 12);
+        renderDropdown();
+      })
+      .catch(() => {});  // sin Tradier, se queda con la búsqueda local
+  };
+
   const pick = (index) => {
     const entry = items[index];
     if (!entry) return;
@@ -173,11 +197,11 @@ function attachSymbolPicker(input, { onPick, onEnter } = {}) {
     if (e.key === "ArrowDown" && !dropdown.hidden) {
       e.preventDefault();
       highlighted = (highlighted + 1) % items.length;
-      render();
+      renderDropdown();
     } else if (e.key === "ArrowUp" && !dropdown.hidden) {
       e.preventDefault();
       highlighted = (highlighted - 1 + items.length) % items.length;
-      render();
+      renderDropdown();
     } else if (e.key === "Enter") {
       e.preventDefault();
       if (!dropdown.hidden && highlighted >= 0) pick(highlighted);
