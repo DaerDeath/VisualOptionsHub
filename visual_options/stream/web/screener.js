@@ -17,6 +17,7 @@ const ScreenerView = {
           <div class="scr-controls">
             <input id="scrSymbols" class="scan-input" spellcheck="false" autocomplete="off"
                    placeholder="símbolos, coma-separados (vacío = lista por defecto)">
+            <button id="scrWatchlist" class="btn" title="usa los símbolos de tus watchlists de Tradier">★ mi watchlist</button>
             <label>DTE min <input id="scrMinDays" type="number" value="25" min="1" max="365"></label>
             <label>DTE max <input id="scrMaxDays" type="number" value="45" min="1" max="365"></label>
             <label>Rendimiento min % <input id="scrMinReturn" type="number" value="12" min="1" max="200"></label>
@@ -42,6 +43,18 @@ const ScreenerView = {
     this.bodyEl = document.getElementById("scrBody");
     this.skippedEl = document.getElementById("scrSkipped");
     document.getElementById("scrRun").addEventListener("click", () => this.load());
+    document.getElementById("scrWatchlist").addEventListener("click", async (e) => {
+      const btn = e.currentTarget;
+      btn.disabled = true;
+      try {
+        document.getElementById("scrSymbols").value = await fetchTradierWatchlistSymbols();
+        this.load();
+      } catch (err) {
+        this.bodyEl.innerHTML = `<tr><td colspan="12" class="scan-empty">${err.message}</td></tr>`;
+      } finally {
+        btn.disabled = false;
+      }
+    });
     this.load();
   },
 

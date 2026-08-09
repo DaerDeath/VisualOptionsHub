@@ -372,6 +372,35 @@ def create_app(mode: str = "sim", *, seed: int | None = None, ib_host: str = "12
         except Exception as exc:
             raise HTTPException(status_code=502, detail=f"el screener falló: {exc}")
 
+    @app.get("/api/watchlists")
+    async def watchlists_endpoint(source: str = "tradier") -> dict:
+        """Watchlists reales de Tradier — solo lectura, nunca crea ni edita nada."""
+        import httpx
+
+        from visual_options.stream import watchlists as wl
+        if source not in ("tradier", "tradier-delayed"):
+            raise HTTPException(status_code=400, detail="watchlists solo disponible con Tradier")
+        token = tradier_token or os.environ.get("TRADIER_TOKEN", "")
+        if not token:
+            raise HTTPException(status_code=400, detail="falta TRADIER_TOKEN")
+        env = "prod" if source == "tradier" else "sandbox"
+        try:
+            lists = await wl.list_watchlists(token, env)
+            symbols = sorted({s for w in lists for s in w["symbols"]})
+            return {"watchlists": lists, "symbols": symbols}
+        except httpx.HTTPError as exc:
+            raise HTTPException(status_code=502, detail=f"no se pudieron leer las watchlists: {exc}")
+
+    @app.get("/api/marketclock")
+    async def marketclock_endpoint(source: str = "tradier") -> dict:
+        from visual_options.stream import marketclock as mc
+        token = None
+        env = "prod"
+        if source in ("tradier", "tradier-delayed"):
+            token = tradier_token or os.environ.get("TRADIER_TOKEN", "")
+            env = "prod" if source == "tradier" else "sandbox"
+        return await mc.market_clock(token or None, env)
+
     @app.get("/api/forward")
     async def forward_endpoint(symbol: str = "QQQ", days: int | None = None,
                                rate: float | None = None) -> dict:

@@ -145,3 +145,15 @@ class StreamClient {
     try { this.ws.close(); } catch (_) { /* ya cerrado */ }
   }
 }
+
+/* Símbolos de las watchlists reales de Tradier, unidas y sin duplicados —
+ * para que Screener/Scanner puedan partir de lo que el usuario ya sigue
+ * en su broker en vez de una lista genérica. Lanza si no hay watchlists
+ * o si falla la llamada (sin token, cuenta sin watchlists, etc.). */
+async function fetchTradierWatchlistSymbols() {
+  const response = await fetch("/api/watchlists?source=tradier");
+  if (!response.ok) throw new Error((await response.json()).detail);
+  const data = await response.json();
+  if (!data.symbols.length) throw new Error("no hay símbolos en tus watchlists de Tradier");
+  return data.symbols.join(",");
+}

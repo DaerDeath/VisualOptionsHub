@@ -204,6 +204,15 @@ body {
 
 .home-sub-hint { opacity: 0.6; }
 .clock { font-family: var(--mono); color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.market-clock {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+}
+.market-clock.mkt-open { color: var(--bought); }
+.market-clock.mkt-closed { color: var(--sold); }
 .status {
   width: 10px; height: 10px; border-radius: 50%;
   background: var(--sold);

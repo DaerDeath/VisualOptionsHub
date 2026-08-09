@@ -92,7 +92,8 @@ const GUIDE_SECTIONS = [
   ["Scanner", "scanner", `
     <p>Señales por símbolo: <b>Dirección</b> = put sell % − call sell % (positivo = presión alcista).
     <b>Régimen</b> = signo del GEX total. <b>Dist. flip</b> = colchón hasta el gamma flip (pequeño = peligro
-    de aceleración). Clic en una fila para abrir su flujo. La lista de símbolos es editable.</p>`],
+    de aceleración). Clic en una fila para abrir su flujo. La lista de símbolos es editable — o pulsa
+    <b>★ mi watchlist</b> para traer los símbolos reales de tu cuenta Tradier (solo lectura).</p>`],
   ["Screener de verticales", "screener", `
     <p>La regla del Cap. 2 aplicada a una lista de símbolos: para cada uno busca, en el vencimiento
     dentro del rango de DTE elegido, el strike más cercano al spot que siga estando a <b>≥1σ</b> de
@@ -102,7 +103,9 @@ const GUIDE_SECTIONS = [
     calcula max profit, max riesgo y probabilidad de beneficio, así que el número que ves aquí es
     el mismo que verías metiendo la posición a mano. Los símbolos sin cadena de opciones, sin
     precio o sin ningún spread que cumpla la regla se listan abajo con el motivo — nunca se ocultan
-    en silencio. Solo lectura: no usa tu cuenta ni coloca nada, solo cadenas públicas de Yahoo.</p>`],
+    en silencio. Solo lectura: no usa tu cuenta ni coloca nada, solo cadenas públicas de Yahoo — el
+    botón <b>★ mi watchlist</b> es la única parte que sí lee tu cuenta Tradier (solo lectura) para
+    traer los símbolos que ya seguís.</p>`],
   ["Calculadora", "calc", `
     <p>Las 23 estrategias del libro: P/L a expiración (blanco) y valor hoy (azul discontinuo),
     breakevens, máximos y <b>probabilidad de beneficio</b> (lognormal con la IV que pongas).

@@ -31,6 +31,7 @@ const ScannerView = {
             <span class="hint">dirección = put sell − call sell (＋alcista / −bajista) · clic en fila → flujo</span>
             <input id="scanSymbols" class="scan-input" value="${saved}" spellcheck="false"
                    title="símbolos separados por comas (Enter para escanear)">
+            <button id="scanWatchlist" class="btn" title="usa los símbolos de tus watchlists de Tradier">★ mi watchlist</button>
           </div>
           <div class="scan-table-wrap"><table class="scan-table">
             <thead><tr>${this.COLUMNS.map(([key, label]) =>
@@ -43,6 +44,19 @@ const ScannerView = {
     this.input = root.querySelector("#scanSymbols");
     this.input.addEventListener("keydown", (e) => {
       if (e.key === "Enter") { localStorage.setItem("vo-scan", this.input.value); this.refresh(); }
+    });
+    root.querySelector("#scanWatchlist").addEventListener("click", async (e) => {
+      const btn = e.currentTarget;
+      btn.disabled = true;
+      try {
+        this.input.value = await fetchTradierWatchlistSymbols();
+        localStorage.setItem("vo-scan", this.input.value);
+        this.refresh();
+      } catch (err) {
+        this.body.innerHTML = `<tr><td colspan="10" class="scan-empty">${err.message}</td></tr>`;
+      } finally {
+        btn.disabled = false;
+      }
     });
     root.querySelectorAll("th").forEach(th => th.addEventListener("click", () => {
       const key = th.dataset.key;

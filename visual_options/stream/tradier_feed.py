@@ -11,11 +11,20 @@ Qué rellena cada panel:
   - magnet: concentración de open interest relativa al volumen
   - footprint: timesales del subyacente (tick si está disponible, si no
     barras de 1 min clasificadas por regla uptick/downtick)
+
+En modo prod (cuenta real) también se abre un stream HTTP de Tradier
+(/markets/events/session) para spot y footprint en vivo, tick a tick,
+en vez de esperar al siguiente poll de 10s; el poll REST del timesales
+se apaga solo mientras el stream está activo (evita duplicar barras).
+No se activa en sandbox: el dato ya viene con ~15 min de retraso, así
+que bajar la latencia de polling no cambia nada ahí.
 """
 
 from __future__ import annotations
 
 import asyncio
+import contextlib
+import json
 import os
 from datetime import datetime
 
@@ -29,6 +38,9 @@ BASE_URLS = {
     "sandbox": "https://sandbox.tradier.com/v1",
     "prod": "https://api.tradier.com/v1",
 }
+STREAM_URL = "https://stream.tradier.com/v1/markets/events"
+STREAM_RECONNECT_MIN = 1.0
+STREAM_RECONNECT_MAX = 30.0
 STRIKE_SPAN = 11
 POLL_SECONDS = 10.0
 
@@ -46,6 +58,7 @@ class TradierFeed:
         if env not in BASE_URLS:
             raise ValueError(f"entorno tradier desconocido: {env!r}")
         self.base = BASE_URLS[env]
+        self.env = env
         self.symbol = symbol.upper()
         source = "tradier" if env == "prod" else "tradier-delayed"
         self.state = DashboardState(symbol=self.symbol, spot=0.0, source=source, connected=False)
@@ -59,6 +72,9 @@ class TradierFeed:
         self._last_volume: dict[str, int] = {}
         self._last_timesale: str | None = None
         self._initialized = False
+        self._stream_task: asyncio.Task | None = None
+        self._streaming_active = False
+        self._last_trade_price: float | None = None
 
     async def _get(self, path: str, **params) -> dict:
         response = await self._client.get(f"{self.base}{path}", params=params)
@@ -79,6 +95,10 @@ class TradierFeed:
             print(f"[tradier] error de red: {exc}")
 
     async def close(self) -> None:
+        if self._stream_task is not None:
+            self._stream_task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await self._stream_task
         await self._client.aclose()
 
     async def _initialize(self) -> None:
@@ -93,6 +113,67 @@ class TradierFeed:
         else:
             self._expiration = dates
         self._initialized = True
+        if self.env == "prod":
+            self._stream_task = asyncio.create_task(self._stream_loop())
+
+    # ------------------------------------------------------- stream en vivo
+
+    async def _create_stream_session(self) -> dict:
+        response = await self._client.post(f"{self.base}/markets/events/session")
+        response.raise_for_status()
+        return response.json().get("stream", {})
+
+    def _apply_stream_event(self, event: dict) -> None:
+        self._streaming_active = True
+        if event.get("type") != "trade":
+            return
+        price, size = event.get("price"), event.get("size")
+        if not price:
+            return
+        price = float(price)
+        is_buy = self._last_trade_price is None or price >= self._last_trade_price
+        self._last_trade_price = price
+        self.state.spot = price
+        t = datetime.now().strftime("%H:%M")
+        self.footprint.add_trades(t, [(price, int(size or 0), is_buy)], bar_key=t)
+
+    async def _stream_loop(self) -> None:
+        """HTTP streaming de Tradier (markets/events): reconecta con
+        backoff exponencial ante cualquier corte — sea por error o porque
+        el servidor cerró la conexión sin más — para no martillar el
+        endpoint de sesión. El backoff se relaja al mínimo en cuanto una
+        conexión llega a entregar al menos un evento real."""
+        backoff = STREAM_RECONNECT_MIN
+        while True:
+            received_any = False
+            try:
+                session = await self._create_stream_session()
+                url = session.get("url", STREAM_URL)
+                sessionid = session.get("sessionid")
+                async with self._client.stream(
+                    "GET", url,
+                    params={"sessionid": sessionid, "symbols": self.symbol,
+                           "filter": "trade,quote", "linebreak": "true"},
+                    timeout=None,
+                ) as response:
+                    response.raise_for_status()
+                    async for line in response.aiter_lines():
+                        line = line.strip()
+                        if not line:
+                            continue
+                        try:
+                            event = json.loads(line)
+                        except json.JSONDecodeError:
+                            continue
+                        self._apply_stream_event(event)
+                        received_any = True
+            except asyncio.CancelledError:
+                raise
+            except Exception as exc:
+                print(f"[tradier] stream caído: {exc}")
+            self._streaming_active = False
+            backoff = STREAM_RECONNECT_MIN if received_any else min(backoff * 2, STREAM_RECONNECT_MAX)
+            await asyncio.sleep(backoff)
 
     async def _refresh_chain(self) -> None:
         quote_data = await self._get("/markets/quotes", symbols=self.symbol)
@@ -187,7 +268,14 @@ class TradierFeed:
         return 100.0 * stats["sold"] / stats["total"] if stats["total"] else 50.0
 
     async def _refresh_footprint(self) -> None:
-        """Timesales del subyacente → barras footprint (uptick/downtick)."""
+        """Timesales del subyacente → barras footprint (uptick/downtick).
+
+        Si el stream en vivo está activo ya alimenta el footprint tick a
+        tick; pedir timesales aquí solo duplicaría barras y gastaría
+        requests de más.
+        """
+        if self._streaming_active:
+            return
         today = datetime.now().strftime("%Y-%m-%d")
         try:
             data = await self._get("/markets/timesales", symbol=self.symbol,

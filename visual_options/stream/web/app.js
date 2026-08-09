@@ -387,5 +387,26 @@ addEventListener("keydown", (e) => {
   if (e.code === "Space" && e.target === document.body) { e.preventDefault(); togglePause(); }
 });
 
+/* Badge de estado del mercado: /markets/clock de Tradier si hay token
+ * (exacto, cuenta feriados), si no cae a una heurística en el propio
+ * backend — funciona en cualquier vista/fuente, no depende de la sesión. */
+async function refreshMarketClock() {
+  const badge = el("marketClock");
+  try {
+    const clock = await fetch("/api/marketclock").then(r => r.json());
+    const isOpen = clock.state === "open";
+    badge.textContent = isOpen ? "● mercado abierto" : "○ mercado cerrado";
+    badge.classList.toggle("mkt-open", isOpen);
+    badge.classList.toggle("mkt-closed", !isOpen);
+    const next = clock.next_change ? ` · próx. cambio ${clock.next_change}` : "";
+    badge.title = `${clock.description || clock.state}${next} (${clock.source === "tradier" ? "Tradier" : "estimado"})`;
+  } catch {
+    badge.textContent = "";
+    badge.title = "";
+  }
+}
+refreshMarketClock();
+setInterval(refreshMarketClock, 60000);
+
 addEventListener("hashchange", route);
 initSources().then(route);
