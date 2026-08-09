@@ -261,12 +261,35 @@ body {
 
 #view.split {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0;
+  gap: 1px;
+  background: var(--border);
 }
-.split-pane { display: flex; min-width: 0; min-height: 0; overflow: hidden; }
+#view.split-2 { grid-template-columns: 1fr 1fr; }
+#view.split-3 { grid-template-columns: 1.3fr 1fr; grid-template-rows: 1fr 1fr; }
+#view.split-3 #viewMain { grid-row: 1 / span 2; }
+#view.split-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+
+.split-pane { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; background: var(--bg); }
 .split-pane > * { flex: 1; min-width: 0; min-height: 0; }
-.split-pane + .split-pane { border-left: 1px solid var(--border); }
+.split-pane-sub > .split-pane-body { display: flex; flex: 1; min-width: 0; min-height: 0; overflow: hidden; }
+.split-pane-sub > .split-pane-body > * { flex: 1; min-width: 0; min-height: 0; }
+.split-pane-head {
+  flex: 0 0 auto;
+  display: flex;
+  padding: 0.3rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.split-pane-sel {
+  width: 100%;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--accent);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.2rem 0.4rem;
+}
 
 .flow-grid {
   display: grid;

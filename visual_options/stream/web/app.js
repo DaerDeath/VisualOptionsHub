@@ -43,9 +43,48 @@ const app = {
   source: "sim",
   sourcesCatalog: [],
   expiry: 0,
-  split: null,       // id de la vista secundaria en pantalla dividida
-  sideView: null,    // objeto de la vista secundaria montada
+  layout: parseInt(localStorage.getItem("vo-layout") || "1", 10) || 1,  // 1 (sin dividir), 2, 3 o 4 paneles
+  paneViews: (() => {
+    try { return JSON.parse(localStorage.getItem("vo-panes") || "[]"); } catch { return []; }
+  })(),
+  paneObjs: [],       // objetos de vista montados en los paneles secundarios
 };
+
+function savePaneState() {
+  localStorage.setItem("vo-layout", String(app.layout));
+  localStorage.setItem("vo-panes", JSON.stringify(app.paneViews));
+}
+
+/* Recorta/extiende app.paneViews a `count` vistas válidas y únicas entre
+ * sí y frente a la vista principal (cada panel muestra algo distinto —
+ * los objetos de vista son singletons, así que dos paneles con la misma
+ * vista pisarían los mismos elementos del DOM). */
+function ensurePaneViews(mainView, count) {
+  const used = new Set([mainView]);
+  const result = [];
+  for (let i = 0; i < count; i++) {
+    let v = app.paneViews[i];
+    if (!v || used.has(v) || !VIEWS[v]) v = Object.keys(VIEWS).find(k => !used.has(k));
+    used.add(v);
+    result.push(v);
+  }
+  app.paneViews = result;
+}
+
+function paneSelectHtml(idx, mainView) {
+  const used = new Set([mainView, ...app.paneViews.filter((_, i) => i !== idx)]);
+  const current = app.paneViews[idx];
+  const options = Object.keys(VIEWS).filter(v => v === current || !used.has(v))
+    .map(v => `<option value="${v}" ${v === current ? "selected" : ""}>${NAV_SHORT[v]}</option>`).join("");
+  return `<select class="split-pane-sel" data-idx="${idx}">${options}</select>`;
+}
+
+function splitPaneHtml(idx, mainView) {
+  return `<div class="split-pane split-pane-sub">
+    <div class="split-pane-head">${paneSelectHtml(idx, mainView)}</div>
+    <div class="split-pane-body" id="panebody${idx}"></div>
+  </div>`;
+}
 
 /* ----------------------------------------------- selector de vencimiento */
 async function loadExpirations() {
@@ -170,7 +209,8 @@ function route() {
   const { view, symbol } = parseHash();
   if (typeof replay !== "undefined" && replay.active) closeReplay(false);
   app.current.unmount();
-  if (app.sideView) { app.sideView.unmount(); app.sideView = null; }
+  app.paneObjs.forEach(obj => obj.unmount());
+  app.paneObjs = [];
   if (app.client) { app.client.close(); app.client = null; }
   app.paused = false;
   app.pending = null;
@@ -186,7 +226,7 @@ function route() {
   el("pauseBtn").hidden = !inView;
   el("replayBtn").hidden = !inView;
   el("shotBtn").hidden = !inView;
-  el("splitSel").hidden = !inView;
+  el("layoutSel").hidden = !inView;
   el("viewTitle").textContent = inView ? VIEW_TITLES[view] : "terminal";
 
   if (!inView) {
@@ -207,20 +247,29 @@ function route() {
   renderNav(view, symbol);
   if (symbolChanged) loadExpirations();
 
-  // pantalla dividida: opciones del selector (todas menos la vista actual)
-  const splitSel = el("splitSel");
-  if (app.split === view) app.split = null;
-  splitSel.innerHTML = `<option value="">— dividir —</option>` +
-    Object.keys(VIEWS).filter(v => v !== view)
-      .map(v => `<option value="${v}" ${v === app.split ? "selected" : ""}>◫ ${NAV_SHORT[v]}</option>`).join("");
+  // pantalla dividida: 1 (sin dividir), 2, 3 o 4 paneles totales
+  el("layoutSel").value = String(app.layout);
+  const paneCount = app.layout - 1;
+  ensurePaneViews(view, paneCount);
+  savePaneState();
 
   app.current = VIEWS[view];
-  root.classList.toggle("split", !!app.split);
-  if (app.split) {
-    root.innerHTML = `<div class="split-pane" id="viewMain"></div><div class="split-pane" id="viewSide"></div>`;
+  root.classList.toggle("split", app.layout > 1);
+  root.classList.remove("split-2", "split-3", "split-4");
+  if (app.layout > 1) {
+    root.classList.add(`split-${app.layout}`);
+    root.innerHTML = `<div class="split-pane" id="viewMain"></div>` +
+      app.paneViews.map((_, i) => splitPaneHtml(i, view)).join("");
     app.current.mount(root.querySelector("#viewMain"));
-    app.sideView = VIEWS[app.split];
-    app.sideView.mount(root.querySelector("#viewSide"));
+    app.paneObjs = app.paneViews.map((v, i) => {
+      const obj = VIEWS[v];
+      obj.mount(root.querySelector(`#panebody${i}`));
+      return obj;
+    });
+    root.querySelectorAll(".split-pane-sel").forEach(sel => sel.addEventListener("change", (e) => {
+      app.paneViews[parseInt(e.target.dataset.idx, 10)] = e.target.value;
+      route();  // remonta con la nueva combinación de paneles
+    }));
   } else {
     app.current.mount(root);
   }
@@ -231,7 +280,7 @@ function onData(payload) {
   if (app.paused) { app.pending = payload; return; }
   updateHeader(payload.flow);
   app.current.onData(payload);
-  if (app.sideView) app.sideView.onData(payload);
+  app.paneObjs.forEach(obj => obj.onData(payload));
 }
 
 function updateHeader(flow) {
@@ -262,9 +311,9 @@ el("expirySel").addEventListener("change", (e) => {
   reconnectStream();
 });
 
-el("splitSel").addEventListener("change", (e) => {
-  app.split = e.target.value || null;
-  route();  // remonta con/sin panel secundario
+el("layoutSel").addEventListener("change", (e) => {
+  app.layout = parseInt(e.target.value, 10) || 1;
+  route();  // remonta con la nueva cantidad de paneles
 });
 
 /* ------------------------------------------------------ replay de sesión */

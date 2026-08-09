@@ -5,6 +5,7 @@
 - **Cambiar símbolo:** escribe el ticker en el input de la barra superior y presiona Enter
 - **Cambiar vencimiento:** selector desplegable (próxima semana, próximo mes, etc.)
 - **Cambiar fuente de datos:** dropdown "Simulación/Yahoo/Tradier/IBKR"
+- **Pantalla dividida:** selector "— sin dividir —" arriba a la derecha, elige 2, 3 o 4 paneles; cada panel (menos el principal) tiene su propio desplegable para elegir qué vista mostrar ahí
 - **Replay:** botón ⏪ para ver cómo se desarrolló la sesión en tiempo acelerado
 - **Exportar:** botón 📷 guarda capturas de pantalla o datos de la vista actual
 - **Guía:** dentro de la app hay una vista "Guía" que explica cada apartado

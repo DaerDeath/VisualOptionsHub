@@ -200,6 +200,16 @@ const GuideView = {
                 ${html}
               </article>`).join("")}
             <article class="guide-sec guide-foot">
+              <h3>Pantalla dividida</h3>
+              <p>El selector "— sin dividir —" de la barra superior (junto al vencimiento) reparte
+              cualquier vista en <b>2, 3 o 4 paneles</b> a la vez, todos siguiendo el mismo símbolo
+              y la misma fuente de datos en vivo. El panel principal es el de la navegación normal;
+              cada panel adicional trae su <b>propio desplegable</b> arriba para elegir qué vista
+              mostrar ahí — no puede repetirse la misma vista en dos paneles a la vez (cada una
+              dibuja sobre sus propios elementos, así que duplicarla pisaría el mismo canvas).
+              La elección de paneles se recuerda entre sesiones.</p>
+            </article>
+            <article class="guide-sec guide-foot">
               <h3>Fuentes de datos</h3>
               <p><b>Simulación</b>: sesión sintética con la dinámica del stream (siempre disponible).
               <b>Yahoo</b>: datos reales gratis con ~15 min de retraso, sin token.
